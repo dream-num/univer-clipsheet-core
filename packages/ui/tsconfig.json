@@ -1,0 +1,22 @@
+{
+    "extends": "@univer-clipsheet-core/tsconfig/utils",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "paths": {
+            "@views/*": [
+                "views/*"
+            ],
+            "@components/*": [
+                "components/*"
+            ]
+        },
+        "types": ["chrome"],
+        "outDir": "dist"
+    },
+    "include": [
+        "index.ts",
+        "components",
+        "views"
+, "../client/lib/table-scraping/views/AccurateExtractionDialog.tsx"    ]
+}

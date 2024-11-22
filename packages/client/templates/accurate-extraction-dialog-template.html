@@ -1,0 +1,451 @@
+<template class='cs-accurate-extraction-template'>
+    <style>
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .cs-panel-inner {
+            cursor: auto;
+        }
+
+        .cs-panel {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI (Custom)', Roboto, 'Helvetica Neue', 'Open Sans (Custom)', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+            box-sizing: border-box;
+            width: 314px;
+            position: fixed;
+            top: 0;
+            right: 30px;
+            background-color: white;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #E6E8EB;
+            box-shadow: 0px 2px 12px 0px rgba(15, 23, 42, 0.16);
+            z-index: 10000001;
+            cursor: move;
+        }
+
+        .btn {
+            border-radius: 32px;
+            font-size: 12px;
+            height: 32px;
+            box-sizing: border-box;
+            line-height: 32px;
+            color: #0F172A;
+            padding: 0 12px;
+            cursor: pointer;
+        }
+
+        .btn+.btn {
+            margin-left: 12px;
+        }
+
+        .cs-default-btn {
+            background-color: white;
+            border: 1px solid #E6E8EB;
+        }
+
+        .cs-feature-btn {
+            border: none;
+            color: white;
+            background: linear-gradient(90deg, #5357ED 0%, #40B9FF 104.41%);
+        }
+
+        .cs-text-btn {
+            color: #274FEE;
+            padding: 0 8px;
+            border: none;
+            background: none;
+        }
+
+
+        .cs-panel-title {
+            background: var(--workspace, linear-gradient(90deg, #5357ED 0%, #40B9FF 104.41%));
+            background-clip: text;
+            line-height: 20px;
+            color: transparent;
+        }
+
+        .cs-panel-content {
+            margin-top: 10px;
+            font-size: 14px;
+            line-height: 20px;
+        }
+
+        .cs-panel-footer {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cs-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cs-panel-header-main {
+            display: flex;
+            align-items: center;
+        }
+
+        .cs-target-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+
+        }
+
+        .cs-close-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 6px;
+            cursor: pointer;
+        }
+
+        .cs-close-icon:hover {
+            border-radius: 4px;
+            background-color: rgba(46, 106, 248, 0.06);
+        }
+
+        .cs-message {
+            display: flex;
+            margin: 10px 0 12px;
+            color: #0F172A;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
+        }
+
+        #no-iframe-content {
+            display: block;
+        }
+
+        .cs-link {
+            color: #2B4DFF;
+            text-decoration: none;
+        }
+
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+            margin-top: 2px;
+        }
+
+        .cs-loading-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        .cs-extra-footer {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .cs-checkbox {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+        }
+
+        .cs-checkbox-label {
+            color: #7A7A7A;
+            font-size: 14px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 20px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        *[data-display="false"] {
+            display: none !important;
+        }
+
+
+        .cs-automation {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .cs-automation-header-button {
+            color: #0F172A;
+            line-height: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            border: none;
+            background-color: transparent;
+        }
+
+        .cs-automation-icon {
+            display: inline-flex;
+            margin-left: 4px;
+        }
+
+        .cs-button-tabs {
+            padding: 2px;
+            background-color: #F1F2F5;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 6px;
+        }
+
+        .cs-cursor-pointer {
+            cursor: pointer;
+        }
+
+        .cs-button-tab {
+            text-align: center;
+            padding: 4px 0;
+            width: 136px;
+            border-radius: 6px;
+            background: transparent;
+
+            color: #0F172A;
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 20px;
+        }
+
+        .cs-button-tab--active {
+            background: #FFF;
+            box-shadow: 0px 2px 8px 0px rgba(15, 23, 42, 0.06);
+        }
+
+        .cs-automation-form {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #E6E8EB;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cs-automation-form-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #474D57;
+            font-size: 14px;
+        }
+
+        .cs-automation-start-btn {
+            border-radius: 32px;
+            border: 1px solid #274FEE;
+            background: #FFF;
+            display: flex;
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 28px;
+            width: 100%;
+            color: #274FEE;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cs-automation-stop-bar {
+            padding: 2px 2px 2px 10px;
+            border-radius: 32px;
+            border: 1px solid #E6E8EB;
+            background: #FFF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #474D57;
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 28px;
+        }
+
+        .cs-automation-stop-btn {
+            display: flex;
+            padding: 0px 12px;
+            justify-content: center;
+            align-items: center;
+            border-radius: 32px;
+            border: 1px solid #FE4B4B;
+            background: #FFF;
+            color: #FE4B4B;
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 24px;
+        }
+
+        .cs-rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        .cs-rotate-transition {
+            transition: transform 0.3s;
+        }
+
+        .cs-input-number {
+            display: flex;
+            width: 80px;
+            height: 30px;
+            outline: 1px solid #E5E5E5;
+            border-radius: 6px;
+        }
+
+        .cs-input-number-control-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cs-input-number-control {
+            width: 100%;
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 16px;
+            text-align: center;
+        }
+
+        .cs-input-number-control::-webkit-outer-spin-button,
+        .cs-input-number-control::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .cs-input-number-buttons {
+            border-left: 1px solid #E5E5E5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cs-input-number-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 18px;
+            height: 13.5px;
+            background: white;
+            border: none;
+        }
+
+        .cs-input-number-button+.cs-input-number-button {
+            border-top: 1px solid #E5E5E5;
+        }
+
+        .cs-inline-flex {
+            display: inline-flex;
+        }
+
+        .cs-flex {
+            display: flex;
+        }
+
+        .cs-items-center {
+            align-items: center;
+        }
+
+        .cs-select-element-bar {
+            font-size: 14px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 20px;
+            padding: 4px;
+            border-radius: 6px;
+            border: 1px solid #E6E8EB;
+        }
+
+        .cs-element-checkbox {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .cs-element-button-icon {
+            padding: 4px;
+            margin-right: 6px;
+        }
+
+        .cs-hover-button:hover {
+            border-radius: 4px;
+            background-color: rgba(46, 106, 248, 0.06);
+        }
+
+        .cs-next-button-icon {
+            display: inline-flex;
+            padding: 4px;
+        }
+
+        .cs-gray-color {
+            color: #878F9B;
+        }
+
+        .cs-active-color {
+            color: #274FEE;
+        }
+
+        .cs-normal-color {
+            color: #0F172A;
+        }
+
+        .cs-disabled-color {
+            color: rgba(15, 23, 42, 0.20);
+            cursor: auto;
+        }
+
+        .cs-disabled-color:hover {
+            background-color: none;
+        }
+
+        .cs-mr-1 {
+            margin-right: 4px;
+        }
+
+        .cs-loading-icon {
+            color: #0B9EFB;
+
+        }
+
+        .cs-animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        button.btn--disabled {
+            border: none;
+            background: rgba(15, 23, 42, 0.20);
+            cursor: not-allowed;
+            color: white;
+        }
+
+        *[data-cs-draggable="true"] {
+            cursor: move;
+        }
+
+        .cs-success-footer {
+            margin-top: 8px;
+            font-size: 14px;
+            line-height: 20px;
+        }
+
+        .cs-underline {
+            text-decoration: underline;
+        }
+    </style>
+
+    <div class="cs-root"></div>
+</template>

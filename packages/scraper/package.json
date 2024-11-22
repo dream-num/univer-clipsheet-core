@@ -1,0 +1,29 @@
+{
+    "name": "@univer-clipsheet-core/scraper",
+    "version": "0.0.1",
+    "private": true,
+    "description": "client code",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "clean": "rimraf ./dist && rimraf .turbo",
+        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "dev": "tsc -w",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@univer-clipsheet-core/scraping": "workspace:*",
+        "@univer-clipsheet-core/shared": "workspace:*",
+        "react-draggable": "4.4.6"
+    },
+    "devDependencies": {
+        "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
+        "@univer-clipsheet-core/tsconfig": "workspace:*",
+        "tsup": "8.0.2"
+    }
+}

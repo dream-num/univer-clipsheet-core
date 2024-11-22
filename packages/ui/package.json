@@ -1,0 +1,33 @@
+{
+    "name": "@univer-clipsheet-core/ui",
+    "version": "0.0.1",
+    "private": true,
+    "description": "ui code",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "clean": "rimraf ./dist && rimraf .turbo",
+        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "dev": "tsc -w",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@univer-clipsheet-core/scraping": "workspace:*",
+        "@univer-clipsheet-core/shared": "workspace:*",
+        "debounce": "2.1.0",
+        "rc-checkbox": "3.3.0",
+        "rc-select": "14.15.2",
+        "rc-switch": "4.1.0",
+        "react-draggable": "4.4.6"
+    },
+    "devDependencies": {
+        "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
+        "@univer-clipsheet-core/tsconfig": "workspace:*",
+        "tsup": "8.0.2"
+    }
+}

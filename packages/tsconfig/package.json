@@ -1,0 +1,6 @@
+{
+    "name": "@univer-clipsheet-core/tsconfig",
+    "version": "1.0.0",
+    "private": true,
+    "description": "tsconfig for chrome extension"
+}
