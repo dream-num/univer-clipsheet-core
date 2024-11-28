@@ -1,4 +1,4 @@
-import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/scraping';
+import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 
 export const PAGE_URL_SLOT = '{pageNo}' as const;
 

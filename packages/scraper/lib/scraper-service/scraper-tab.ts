@@ -1,0 +1,211 @@
+import type { IPageUrlAutoExtractionConfig, IScraper, ScraperErrorCode } from '@lib/scraper';
+import { AutoExtractionMode, PAGE_URL_SLOT } from '@lib/scraper';
+import { ObservableValue } from '@univer-clipsheet-core/shared';
+import type { ScraperTaskChannelResponse } from './scraper-channel';
+
+export interface ScraperTabResponseError {
+    code: ScraperErrorCode;
+};
+export interface ScraperTabResponse extends ScraperTaskChannelResponse {
+    error?: ScraperTabResponseError;
+};
+
+export type ResponseCallback = (scraper: IScraper, response: ScraperTabResponse) => void;
+
+export type ResponseInterceptor = (scraperTab: ScraperTab, rows: ScraperTabResponse['rows']) => ScraperTabResponse['rows'] | Promise<ScraperTabResponse['rows']>;
+
+function generateScraperPageUrl(scraper: IScraper, pageNo: number) {
+    const config = scraper.config as IPageUrlAutoExtractionConfig;
+    return config.templateUrl.replace(PAGE_URL_SLOT, pageNo.toString());
+}
+
+function mergeResponse(res1: ScraperTabResponse, res2: ScraperTabResponse): ScraperTabResponse {
+    return {
+        rows: res1.rows.concat(res2.rows),
+        done: res1.done || res2.done,
+    };
+}
+
+export class ScraperTab {
+    private _dispose$ = new ObservableValue<boolean>(false);
+    private _onError$ = new ObservableValue<ScraperTabResponseError | undefined>(undefined);
+    private _tab: chrome.tabs.Tab | undefined = undefined;
+    private _tabPromise!: Promise<chrome.tabs.Tab>;
+    private _resolve!: (res: ScraperTabResponse) => void;
+    private _currentPage$ = new ObservableValue(0);
+    private _promise: Promise<ScraperTabResponse>;
+    private _responseCallbacks = new Set<ResponseCallback>();
+    private _requestCallbacks = new Set<() => void>();
+    private _response: ScraperTabResponse = {
+        done: false,
+        rows: [],
+    };
+
+    private _responseInterceptors = new Set<ResponseInterceptor>();
+
+    constructor(private _scraper: IScraper, windowId?: number) {
+        this._initResponseCallbacks();
+
+        if (_scraper.mode === AutoExtractionMode.PageUrl) {
+            this._currentPage$.next((_scraper.config as IPageUrlAutoExtractionConfig).startPage);
+        }
+
+        this._promise = new Promise<ScraperTabResponse>((_resolve) => {
+            let resolved = false;
+            this._resolve = async (res: ScraperTabResponse) => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+
+                if (res.error) {
+                    _resolve(res);
+                    return;
+                }
+                // Apply response interceptors
+                const interceptors = Array.from(this._responseInterceptors);
+                let rows = res.rows;
+                for (const interceptor of interceptors) {
+                    rows = await interceptor(this, rows);
+                }
+
+                _resolve({
+                    rows,
+                    done: true,
+                });
+            };
+
+            const url = _scraper.mode === AutoExtractionMode.PageUrl
+                ? generateScraperPageUrl(_scraper, this._currentPage$.value)
+                : _scraper.url;
+
+            this._tabPromise = chrome.tabs.create({ url, windowId, active: false });
+            this._tabPromise.then((tab) => {
+                if (!tab.id) {
+                    return;
+                }
+                this._tab = tab;
+            });
+        });
+    }
+
+    addResponseInterceptor(interceptor: ResponseInterceptor) {
+        const { _responseInterceptors } = this;
+        _responseInterceptors.add(interceptor);
+
+        return () => {
+            _responseInterceptors.delete(interceptor);
+        };
+    }
+
+    private _initResponseCallbacks() {
+        const { _responseCallbacks } = this;
+        const responseCallback = (scraper: IScraper, res: ScraperTabResponse) => {
+            this._response = mergeResponse(this._response, res);
+
+            if (this._response.done) {
+                this._resolve(this._response);
+            }
+        };
+
+        // PageUrl scraper callback
+        const pageUrlScraperCallback = (scraper: IScraper) => {
+            const tabId = this._tab?.id;
+            if (!tabId || scraper.mode !== AutoExtractionMode.PageUrl) {
+                return;
+            }
+
+            const { _currentPage$ } = this;
+
+            // Achieve the end page
+            if (_currentPage$.value >= (scraper.config as IPageUrlAutoExtractionConfig).endPage) {
+                this._resolve(this._response);
+                return;
+            }
+
+            this._currentPage$.next(_currentPage$.value + 1);
+
+            const nextPageUrl = generateScraperPageUrl(scraper, this._currentPage$.value);
+            chrome.tabs.update(tabId, { url: nextPageUrl });
+        };
+
+        _responseCallbacks.add(responseCallback);
+        _responseCallbacks.add(pageUrlScraperCallback);
+    }
+
+    resolve(res: ScraperTabResponse) {
+        this._resolve(res);
+    }
+
+    reject(error: ScraperTabResponseError) {
+        this._onError$.next(error);
+        this._resolve({
+            error,
+            rows: [],
+            done: true,
+        });
+    }
+
+    get tab() {
+        return this._tab;
+    }
+
+    get promise() {
+        return this._promise;
+    }
+
+    get tabPromise() {
+        return this._tabPromise;
+    }
+
+    get scraper() {
+        return this._scraper;
+    }
+
+    get response() {
+        return this._response;
+    }
+
+    registerRequestCallback(callback: () => void) {
+        this._requestCallbacks.add(callback);
+    }
+
+    onError(callback: (error: ScraperTabResponseError) => void) {
+        // @ts-ignore
+        this._onError$.subscribe(callback);
+    }
+
+    onPageChange(callback: (page: number) => void) {
+        this._currentPage$.subscribe(callback);
+    }
+
+    onResponse(res: ScraperTabResponse) {
+        this._responseCallbacks.forEach((callback) => callback(this._scraper, res));
+    }
+
+    onRequest() {
+        this._requestCallbacks.forEach((callback) => callback());
+    }
+
+    onDispose(callback: () => void) {
+        this._dispose$.subscribe(callback);
+    }
+
+    dispose() {
+        if (this._dispose$.value) {
+            return;
+        }
+
+        this._dispose$.next(true);
+        this._dispose$.dispose();
+        this._onError$.dispose();
+
+        const tabId = this._tab?.id;
+
+        if (tabId) {
+            chrome.tabs.remove(tabId);
+        }
+        this._responseInterceptors.clear();
+        this._responseCallbacks.clear();
+    }
+}

@@ -7,6 +7,9 @@
             "@views/*": [
                 "views/*"
             ],
+            "@lib/*": [
+                "lib/*"
+            ],
             "@components/*": [
                 "components/*"
             ]
@@ -16,7 +19,8 @@
     },
     "include": [
         "index.ts",
+        "lib",
         "components",
         "views"
-, "../client/lib/table-scraping/views/AccurateExtractionDialog.tsx"    ]
+    ]
 }

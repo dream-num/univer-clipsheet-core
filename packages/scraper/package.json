@@ -13,17 +13,15 @@
     "scripts": {
         "clean": "rimraf ./dist && rimraf .turbo",
         "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
-        "dev": "tsc -w",
+        "dev": "pnpm run build --watch",
         "type-check": "tsc --noEmit"
     },
     "dependencies": {
-        "@univer-clipsheet-core/scraping": "workspace:*",
         "@univer-clipsheet-core/shared": "workspace:*",
-        "react-draggable": "4.4.6"
+        "@univer-clipsheet-core/table": "workspace:*"
     },
     "devDependencies": {
         "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
-        "@univer-clipsheet-core/tsconfig": "workspace:*",
-        "tsup": "8.0.2"
+        "@univer-clipsheet-core/tsconfig": "workspace:*"
     }
 }

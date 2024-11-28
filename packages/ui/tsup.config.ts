@@ -5,4 +5,7 @@ export default defineConfig({
     format: ['cjs', 'esm'],
     dts: true,
     external: ['chrome', 'react'],
+    loader: {
+        '.html': 'text',
+    },
 });

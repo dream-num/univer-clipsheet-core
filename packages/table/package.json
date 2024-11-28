@@ -1,0 +1,26 @@
+{
+    "name": "@univer-clipsheet-core/table",
+    "version": "0.0.1",
+    "private": true,
+    "description": "table code",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "clean": "rimraf ./dist && rimraf .turbo",
+        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "dev": "pnpm run build --watch",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@univer-clipsheet-core/shared": "workspace:*"
+    },
+    "devDependencies": {
+        "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
+        "@univer-clipsheet-core/tsconfig": "workspace:*"
+    }
+}

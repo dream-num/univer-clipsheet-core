@@ -1,4 +1,7 @@
-export interface IClipsheetMessage<K extends string, P extends Record<string, unknown>> {
+
+export interface IMessage<K extends string> {
     type: K;
-    payload: P;
+}
+export interface IMessageWithPayload<K extends string, p = unknown> extends IMessage<K> {
+    payload: p;
 }

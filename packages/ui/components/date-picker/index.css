@@ -1,0 +1,53 @@
+.rc-picker-suffix {
+    display: inline-flex;
+}
+
+.rc-picker-input input {
+    outline: none;
+    background-color: transparent;
+}
+
+.rc-picker-dropdown  {
+    box-shadow: none;
+}
+
+.rc-picker-panel{
+   
+    border-radius: 8px;
+    background-color: white;
+    border: none;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)
+}
+
+.rc-picker-body {
+    padding: 8px;
+    font-size: 14px;
+}
+
+.rc-picker-body th {
+    font-weight: 400;
+}
+
+.rc-picker-date-panel .rc-picker-cell-inner {
+    font-size: 14px;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+}
+
+.rc-picker-cell-inner:hover, .rc-picker-cell-selected .rc-picker-cell-inner {
+    background-color: #3b82f6;
+    color: white;
+}
+
+
+.rc-picker-cell-hover > .rc-picker-cell-inner {
+    background-color: #3b82f6
+}
+
+.rc-picker-header {
+    font-size: 14px;
+    padding: 8px 4px;
+    border-bottom: 1px solid rgb(229, 230, 235);
+}

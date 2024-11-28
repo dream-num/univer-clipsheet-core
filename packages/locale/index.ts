@@ -19,3 +19,4 @@ function createTranslator<K extends string = string>(i18mMap: Record<K, string>)
 }
 
 export const t = createTranslator(isZhCN() ? zhCN : enUS);
+export type Translator = typeof t;

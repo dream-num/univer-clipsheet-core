@@ -1,0 +1,31 @@
+{
+    "name": "@univer-clipsheet-core/workflow",
+    "version": "0.0.1",
+    "private": true,
+    "description": "workflow code",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "clean": "rimraf ./dist && rimraf .turbo",
+        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "dev": "pnpm run build --watch",
+        "test": "vitest run",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@univer-clipsheet-core/scraper": "workspace:*",
+        "@univer-clipsheet-core/shared": "workspace:*",
+        "@univer-clipsheet-core/table": "workspace:*",
+        "dayjs": "1.11.11"
+    },
+    "devDependencies": {
+        "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
+        "@univer-clipsheet-core/tsconfig": "workspace:*",
+        "vitest": "^1.6.0"
+    }
+}

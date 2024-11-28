@@ -13,11 +13,16 @@
     "scripts": {
         "clean": "rimraf ./dist && rimraf .turbo",
         "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
-        "dev": "tsc -w",
+        "dev": "pnpm run build --watch",
         "type-check": "tsc --noEmit"
     },
+    "dependencies": {
+        "nanoid": "5.0.8",
+        "throttle-debounce": "5.0.2"
+    },
     "devDependencies": {
-        "@univer-clipsheet-core/tsconfig": "workspace:*",
-        "tsup": "8.0.2"
+        "@types/throttle-debounce": "5.0.2",
+        "@univer-clipsheet-core/tsconfig": "workspace:*"
+
     }
 }

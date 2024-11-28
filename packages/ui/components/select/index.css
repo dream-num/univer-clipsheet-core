@@ -1,0 +1,64 @@
+.rc-select-selector {
+    border-radius: 8px;
+    height: 32px;
+    width: 100%;
+}
+
+.rc-select-item {
+    cursor: pointer;
+}
+
+.rc-select-focused .rc-select-selector {
+    border-color: #bfdbfe !important;
+}
+
+.rc-select-single:not(.rc-select-customize-input) .rc-select-selector {
+    border-color: #E3E5EA;
+    padding: 6px 10px;
+}
+.rc-select-single:not(.rc-select-customize-input):hover .rc-select-selector {
+    border-color: #3b82f6;
+}
+
+.rc-select-arrow,.rc-select-clear {
+    height: 32px;
+    line-height: 32px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.rc-select-single .rc-select-selector .rc-select-selection-item, .rc-select-single .rc-select-selector .rc-select-selection-placeholder {
+    top: 6px;
+    left: 10px;
+    font-size: 14px;
+}
+
+.rc-select-item-option-active {
+    border-radius: 8px;
+    background-color: #EEEFF1;
+}
+
+.rc-select-multiple .rc-select-selector .rc-select-selection-search-input {
+    background-color: transparent;
+}
+
+.rc-select-single:not(.rc-select-customize-input) .rc-select-selector .rc-select-selection-search-input {
+    background-color: transparent;
+}
+
+.rc-select-item-option-active {
+    border-radius: 6px;
+}
+
+.rc-select-allow-clear:hover .rc-select-clear {
+    opacity: 1;
+}
+
+.rc-select-allow-clear .rc-select-clear   {
+    right: 5px;
+    top: 0;
+    z-index: 1;
+    opacity: 0;
+}
+
+
