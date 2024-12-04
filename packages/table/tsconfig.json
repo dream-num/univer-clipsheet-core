@@ -6,9 +6,6 @@
         "paths": {
             "@lib/*": [
                 "lib/*"
-            ],
-            "@views/*": [
-                "views/*"
             ]
         },
         "types": ["chrome"],
@@ -16,6 +13,6 @@
     },
     "include": [
         "index.ts",
-        "lib", "views"
+        "lib"
     ]
 }

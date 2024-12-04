@@ -6,9 +6,6 @@
         "paths": {
             "@lib/*": [
                 "lib/*"
-            ],
-            "@views/*": [
-                "views/*"
             ]
         },
         "types": ["chrome"],
@@ -16,6 +13,5 @@
     },
     "include": [
         "index.ts",
-        "lib", "views",
-        "../ui/client/scraper-client/scraper-client-channel.service.ts", "../ui/client/scraper-client/scraper-client-channel.ts"]
+        "lib"]
 }

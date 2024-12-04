@@ -12,7 +12,7 @@
     ],
     "scripts": {
         "clean": "rimraf ./dist && rimraf .turbo",
-        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "build": "tsup index.ts --format esm,cjs --dts --external chrome",
         "dev": "pnpm run build --watch",
         "test": "vitest run",
         "type-check": "tsc --noEmit"
