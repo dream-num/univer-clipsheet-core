@@ -1,298 +1,107 @@
 
+import type { GetDataSourceMessage } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, defaultPageSize, generateRandomId, pushDataSource, setAndPushStorage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { Inject } from '@wendellhu/redi';
-import type { GetDataSourceMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum } from '@univer-clipsheet-core/shared';
-import type { ITableRecord, TableRecordTypeEnum } from './table';
-import type { DeleteTableRecordMessage, IGetTableRecordsParams, ScrapTablesMessage } from './table.message';
-import { TableDataSourceKeyEnum, TableMessageTypeEnum, TableStorageKeysEnum } from './table.message';
+import type { AddTablePayload } from './table-data-source';
 import { ITableDataSource } from './table-data-source';
-import type { IInitialSheet } from './parser';
-
-// interface ITableManagerParams {
-//     page: number;
-//     pageSize: number;
-//     recordTypes?: TableRecordTypeEnum[];
-// }
-
-// async function ensureStorageTasks(key: TableStorageKeysEnum.Table | StorageKeys.AllSheetsTable) {
-//     const tasks = await getStorage(key);
-
-//     return (Array.isArray(tasks) ? tasks : []).filter(Boolean);
-// }
-
-// interface ITableDataSource {
-//     addTask(task: ITask): Promise<void>;
-//     deleteTask(taskId: string): Promise<void>;
-//     getTable(params: ITableManagerParams): Promise<{
-//         tasks: ITask[];
-//         total: number;
-//     }>;
-// }
-
-// class LocalTableDataSource implements ITableDataSource {
-//     async addTask(task: ITask): Promise<void> {
-//         const storageKey = task.recordType === RecordType.WholeSheet ? StorageKeys.AllSheetsTable : StorageKeys.Table;
-//         const Table = await ensureStorageTasks(storageKey);
-
-//         await setStorage(storageKey, [task].concat(Table || []));
-//     }
-
-//     async deleteTask(taskId?: string): Promise<void> {
-//         const Table = await ensureStorageTasks(StorageKeys.Table);
-
-//         return setStorage(StorageKeys.Table, Table.filter((task) => task.id !== taskId));
-//     }
-
-//     async getTable(params: ITableManagerParams): Promise<{ tasks: ITask[]; total: number }> {
-//         const storageKey = params.recordTypes?.[0] === RecordType.WholeSheet ? StorageKeys.AllSheetsTable : StorageKeys.Table;
-//         const TableResponse = ensureStorageTasks(storageKey);
-
-//         return TableResponse.then((_tasks: ISheetTask[]) => {
-//             const tasks = Array.isArray(_tasks) ? _tasks : [];
-
-//             return {
-//                 tasks,
-//                 total: tasks.length,
-//             };
-//         });
-//     }
-// }
-
-// class RemoveTableDataSource {
-//     async addTask(task: ITask): Promise<void> {
-//     }
-
-//     async deleteTask(taskId: string): Promise<void> {
-//         crxRequest.deleteTask(String(taskId));
-//     }
-
-//     async getTable(params: ITableManagerParams): Promise<{ tasks: ITask[]; total: number }> {
-//         return crxRequest.collectedList(params).then((res) => {
-//             return {
-//                 tasks: (res.records || []).map((record) => {
-//                     const { sheet } = record;
-//                     const task: ITask = {
-//                         id: record.id,
-//                         recordType: record.recordType,
-//                         data: {
-//                             unitId: sheet.unitId,
-//                             originUrl: sheet.originUrl,
-//                             title: sheet.title,
-//                             status: TaskStatus.Success,
-//                             time: sheet.createdAt * 1000,
-//                         },
-//                     };
-
-//                     return task;
-//                 }),
-//                 total: res.totalSize || 0,
-//             };
-//         });
-//     }
-// }
+import type { DeleteTableRecordMessage, IGetTableRecordsParams, ResponseScrapTablesMessage, ScrapTablesMessage } from './table.message';
+import { inProgressTableRecordId, TableDataSourceKeyEnum, TableMessageTypeEnum, TableStorageKeyEnum } from './table.message';
+import type { ITableRecord } from './table';
 
 export class TableService {
-    // private local$ = new ObservableValue<boolean>(true);
-    // private _deleteTask$ = new ObservableValue<ITask | null>(null);
-    // private _tasks: ITask[] = [];
-    // private _params: ITableManagerParams = {
-    //     page: 1,
-    //     pageSize: 20,
-    // };
-
-    // private _localDataSource = new LocalTableDataSource();
-    // private _remoteDataSource = new RemoveTableDataSource();
+    private _latestParams: IGetTableRecordsParams = {
+        page: 1,
+        pageSize: defaultPageSize,
+    };
 
     constructor(
         @Inject(ITableDataSource) private _tableDataSource: ITableDataSource
-        // @Inject(UserManager) private _userManager: UserManager
     ) {
-        // this._subscribeMessages();
-
-        // this.local$.subscribe(() => {
-        //     if (this._params) {
-        //         this.sendNewTable();
-        //     }
-        // });
-
-        // this._userManager.onUserChanged((user) => {
-        //     this.setLocal(user.anonymous !== false);
-        // });
     }
 
-    addTable(record: Omit<ITableRecord, 'createdAt'>) {
-        return this._tableDataSource.add(record);
+    addTable(_payload: ScrapTablesMessage['payload']) {
+        const payload = _payload as AddTablePayload;
+        // Add id to table record
+        payload.record.id = generateRandomId();
+
+        const inProgressTableRecord: ITableRecord = {
+            ...payload.record,
+            id: inProgressTableRecordId,
+            createdAt: Date.now(),
+            recordType: payload.record.recordType,
+            value: '',
+        };
+
+        setAndPushStorage(TableStorageKeyEnum.InProgressTableRecord, inProgressTableRecord);
+
+        const response = this._tableDataSource.add(payload).finally(() => {
+            setAndPushStorage(TableStorageKeyEnum.InProgressTableRecord, null);
+            setAndPushStorage(UIStorageKeyEnum.Loading, false);
+        });
+
+        return response;
     }
-
-    // addTableBySheets(sheets: IInitialSheet[], text?: string) {
-
-    // }
 
     deleteTable(id: string) {
         return this._tableDataSource.delete(id);
     }
 
+    async pushTableRecords(_params?: IGetTableRecordsParams) {
+        if (_params) {
+            this._latestParams = _params;
+        }
+
+        return pushDataSource(TableDataSourceKeyEnum.TableRecords, await this._tableDataSource.getList(this._latestParams));
+    }
+
     listenMessage() {
-        chrome.runtime.onMessage.addListener((req: DeleteTableRecordMessage
+        chrome.runtime.onMessage.addListener(async (req: DeleteTableRecordMessage
             | GetDataSourceMessage<TableDataSourceKeyEnum.TableRecords, IGetTableRecordsParams>
             | ScrapTablesMessage
-        ) => {
+        , sender) => {
             switch (req.type) {
                 case ClipsheetMessageTypeEnum.GetDataSource: {
                     const { payload } = req;
                     if (payload.key === TableDataSourceKeyEnum.TableRecords) {
-                        const msg: PushDataSourceMessage = {
-                            type: ClipsheetMessageTypeEnum.PushDataSource,
-                            payload: {
-                                key: TableDataSourceKeyEnum.TableRecords,
-                                value: this._tableDataSource.getList(payload.params),
-                            },
-                        };
-
-                        chrome.runtime.sendMessage(msg);
+                        this.pushTableRecords(payload.params);
                     }
 
                     break;
                 }
                 case TableMessageTypeEnum.DeleteTableRecord: {
-                    this.deleteTable(req.payload);
+                    await this.deleteTable(req.payload);
 
+                    this.pushTableRecords();
                     break;
                 }
                 case TableMessageTypeEnum.ScrapTables: {
                     const { payload } = req;
 
-                    this.addTable(payload.record);
+                    const res: ResponseScrapTablesMessage = {
+                        type: TableMessageTypeEnum.ResponseScrapTables,
+                        payload: {
+                            success: false,
+                            id: '',
+                        },
+                    };
+
+                    const senderTabId = sender.tab?.id;
+
+                    this.addTable(payload)
+                        .then((id) => {
+                            res.payload.success = true;
+                            res.payload.id = id;
+                            senderTabId && chrome.tabs.sendMessage(senderTabId, res);
+                            this.pushTableRecords();
+                        })
+                        .catch(() => {
+                            console.error('TableService:ScrapTables', 'Failed to add table');
+                            senderTabId && chrome.tabs.sendMessage(senderTabId, res);
+                        });
                     break;
                 }
             }
         });
     }
-
-    // listenMessage() {
-    //     chrome.runtime.onMessage.addListener(async (req: DeleteTableRecordMessage
-    //         | GetDataSourceMessage<TableDataSourceKeyEnum.TableRecords, IGetTableRecordsParams>) => {
-    //         switch (req.type) {
-    //             case ClipsheetMessageTypeEnum.GetDataSource: {
-    //                 const { payload } = req;
-    //                 if (payload.key === TableDataSourceKeyEnum.TableRecords) {
-    //                     const msg: PushDataSourceMessage = {
-    //                         type: ClipsheetMessageTypeEnum.PushDataSource,
-    //                         payload: {
-    //                             key: TableDataSourceKeyEnum.TableRecords,
-    //                             value: this._tableDataSource.getList(payload.params),
-    //                         },
-    //                     };
-
-    //                     chrome.runtime.sendMessage(msg);
-    //                 }
-
-    //                 break;
-    //             }
-    //             case TableMessageTypeEnum.DeleteTableRecord: {
-    //                 this.deleteTable(req.payload);
-
-    //                 break;
-    //             }
-    //         }
-    //     });
-    // }
-
-    // get currentDataSource() {
-    //     return this.local ? this._localDataSource : this._remoteDataSource;
-    // }
-
-    // get local() {
-    //     return this.local$.value;
-    // }
-
-    // setLocal(local: boolean) {
-    //     this.local$.next(local);
-    // }
-
-    // sendTable(params: {
-    //     tasks: ITask[];
-    //     total: number;
-    //     recordTypes?: RecordType[];
-    // }) {
-    //     const { tasks, total, recordTypes = [] } = params;
-    //     this._tasks = tasks;
-    //     const msg: Message[MsgType.SendTable] = {
-    //         type: MsgType.SendTable,
-    //         tasks,
-    //         total,
-    //         recordTypes,
-    //     };
-    //     chrome.runtime.sendMessage(msg);
-    // }
-
-    // private _getVisibleStorageTasks(localTasks: ITask[]) {
-    //     const { page, pageSize } = this._params;
-    //     // slice tasks by page
-    //     return localTasks.slice((page - 1) * pageSize, page * pageSize);
-    // }
-
-    // async getTable(params: ITableManagerParams) {
-    //     this._params = params;
-
-    //     const res = await this.currentDataSource.getTable(params);
-    //     if (this.local) {
-    //         res.tasks = this._getVisibleStorageTasks(res.tasks);
-    //     }
-
-    //     return res;
-    // }
-
-    // async sendNewTable() {
-    //     const params = this._params;
-    //     const taskParam = await this.getTable(params);
-    //     this.sendTable({ ...taskParam, recordTypes: params.recordTypes });
-    // }
-
-    // async deleteTask(index, _taskId?: string) {
-    //     if (this.local) {
-    //         return this._localDataSource.deleteTask(_taskId);
-    //     } else {
-    //         const taskId = _taskId || this._tasks[index].id;
-    //         return this._remoteDataSource.deleteTask(String(taskId));
-    //     }
-    // }
-
-    // async addTask(task: ITask) {
-    //     this.currentDataSource.addTask(task);
-    // }
-
-    // onDeleteTask(callback: Parameters<typeof this._deleteTask$.subscribe>[0]) {
-    //     return this._deleteTask$.subscribe(callback);
-    // }
-
-    // listenChromeMessage() {
-    //     chrome.runtime.onMessage.addListener(async (msg: MessageItem) => {
-            // switch (msg.type) {
-            //     case MsgType.RequestTable: {
-            //         const taskParam = await this.getTable(msg);
-            //         this.sendTable({ ...taskParam, recordTypes: msg.recordTypes });
-            //         break;
-            //     }
-            //     case MsgType.DeleteTask: {
-            //         await this.deleteTask(msg.index, msg.taskId);
-            //         this.sendNewTable();
-            //         break;
-            //     }
-            //     case MsgType.GetData: {
-            //         if (msg.key === DataSourceKeys.DataSourceSheets) {
-            //             const res = await crxRequest.collectedList({
-            //                 page: 1,
-            //                 pageSize: defaultPageSize,
-            //                 recordTypes: [RecordType.ScraperSheet, RecordType.WorkflowSheet],
-            //             });
-
-            //             sendDataSource(DataSourceKeys.DataSourceSheets, res.records);
-            //         }
-            //         break;
-            //     }
-            // }
-    //     });
-    // }
 }
 

@@ -1,8 +1,8 @@
 
 import type { GetDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, defaultPageSize, getStorage, ObservableValue, pushDataSource } from '@univer-clipsheet-core/shared';
-import type { IInitialSheet, ISheet_Row_Cell } from '@univer-clipsheet-core/table';
-import { createEmptyInitialSheet, Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
+import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource } from '@univer-clipsheet-core/shared';
+import type { IInitialSheet, ISheet_Row, ISheet_Row_Cell } from '@univer-clipsheet-core/table';
+import { Sheet_Cell_Type_Enum, TableService } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import type { IScraper } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, CountThreshold, ScraperService, TimeoutThreshold } from '@univer-clipsheet-core/scraper';
@@ -37,52 +37,53 @@ function mergeCells(cells: ISheet_Row_Cell[], type: Sheet_Cell_Type_Enum) {
     return mergedCell;
 }
 
+export interface IWorkflowDoneContext {
+    workflow: IWorkflow;
+    url: string;
+    rows: ISheet_Row[];
+}
+
 export class WorkflowService {
+    private _workflowWindowPath: string = '';
     filterRuleValidator = new FilterRuleValidator();
     workflowWindow: chrome.windows.Window | undefined = undefined;
+    // private _runningIdsProxy = new StorageProxy<string[]>(UIStorageKeyEnum.RunningWorkflowIds);
     private _runningWorkflowIds$ = new ObservableValue<string[]>([]);
     private _scheduleTimer: number | undefined = undefined;
-    private _onAfterWorkflowExecuted$ = new ObservableValue<{
-        workflow: IWorkflow;
-        // data: {
-        //     url: string;
-        //     rows: ISheet_Row[];
-        // }
-    } | null>(null);
 
-    // private _dataSource = new WorkflowDataSource();
+    private _onWorkflowDoneCallbacks = new Set<(ctx: IWorkflowDoneContext) => unknown>();
+    private _onSendEmail$ = new ObservableValue<IWorkflowDoneContext | null>(null);
+
     private _workflowScraperReferenceMap = new Map<string, Set<string>>();
-    // private _workListPromise: Promise<IWorkflow[]> | undefined = undefined;
 
     constructor(
         @Inject(IWorkflowDataSource) private _dataSource: IWorkflowDataSource,
-        // @Inject(StorageManager) private _storageManager: StorageManager,
-        @Inject(ScraperService) private _scraperService: ScraperService
-        // @Inject(UserManager) private _userManager: UserManager
+        @Inject(ScraperService) private _scraperService: ScraperService,
+        @Inject(TableService) private _tableService: TableService
     ) {
         this._initWorkflowSchedule();
         this._initWorkflowTriggers();
 
+        // this._runningIdsProxy.onChange((runningIds) => {
+        //     if (runningIds.length <= 0) {
+        //         this._closeWorkflowWindow();
+        //     }
+        //     // console.log('runningIds', runningIds);
+        //     // pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, runningIds);
+        // });
         this._runningWorkflowIds$.subscribe((runningIds) => {
             if (runningIds.length <= 0) {
                 this._closeWorkflowWindow();
             }
-
+            // console.log('runningIds', runningIds);
             pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, runningIds);
         });
-
-        // this._storageManager.onStorageChange(({ key, value }) => {
-        //     if (key === StorageKeys.RunningWorkflowIds && value && value.length <= 0) {
-        //         this._closeWorkflowWindow();
-        //     }
-        // });
     }
 
     private _initWorkflowSchedule() {
         const runWorkflows = async () => {
             const scheduleComparison = dayjs();
             const workflows = await this._dataSource.getList({ pageSize: defaultPageSize });
-            // console.log('_initWorkflowSchedule workflows', workflows);
 
             const validatedWorkflows = workflows.filter((workflow) => validateSchedule(workflow.schedule, scheduleComparison));
 
@@ -140,21 +141,12 @@ export class WorkflowService {
     }
 
     private _initWorkflowTriggers() {
-        this._onAfterWorkflowExecuted$.subscribe(async (ctx) => {
-            // console.log('_onAfterWorkflowExecuted', ctx);
-            if (!ctx) {
-                return;
-            }
+        this.onWorkflowDone((ctx) => {
             const { workflow } = ctx;
             const emailTrigger = workflow.triggers?.find((trigger) => trigger.name === WorkflowTriggerName.EmailNotification);
-            // console.log('workflow', workflow);
-            if (emailTrigger && workflow.unitId) {
-                // Send email after workflow done
-                // crxRequest.sendWorkflowNotification({
-                //     id: workflow.id!,
-                //     unitUrl: joinUnitUrl(await getStorageBaseUrl(), workflow.unitId),
-                //     executeTime: dayjs().unix(),
-                // });
+
+            if (emailTrigger && workflow.tableId) {
+                this._onSendEmail$.next(ctx);
             }
         });
     }
@@ -162,7 +154,7 @@ export class WorkflowService {
     private async _ensureWindow() {
         if (!this.workflowWindow) {
             const window = await chrome.windows.create({
-                url: chrome.runtime.getURL('/workflow-panel/workflow-window.html'),
+                url: this._workflowWindowPath,
                 width: 800,
                 height: 600,
                 focused: false,
@@ -171,6 +163,10 @@ export class WorkflowService {
         }
 
         return this.workflowWindow;
+    }
+
+    setWorkflowWindowPath(path: string) {
+        this._workflowWindowPath = path;
     }
 
     private _ensureScraperReferences(scraperId: string) {
@@ -241,6 +237,7 @@ export class WorkflowService {
 
         const executeWorkflow = async () => {
             const window = await this._ensureWindow();
+            // console.log(window, 'window');
 
             const scraperIds = new Set<string>();
 
@@ -362,13 +359,13 @@ export class WorkflowService {
 
     async _removeRunningWorkflowId(workflowId: string) {
         const runningIds = this._runningWorkflowIds$.value;
-        if (!runningIds.includes(workflowId)) {
+        if (!runningIds?.includes(workflowId)) {
             return;
         }
 
         const newRunningIds = runningIds.filter((runningId) => runningId !== workflowId);
+        // this._runningIdsProxy.set(newRunningIds);
         this._runningWorkflowIds$.next(newRunningIds);
-        // this._storageManager.setStorage(StorageKeys.RunningWorkflowIds, newRunningIds);
     }
 
     async stopWorkflow(workflowId: string) {
@@ -378,12 +375,12 @@ export class WorkflowService {
 
     async _addRunningWorkflowId(id: string) {
         const runningIds = this._runningWorkflowIds$.value;
-        // const runningIds = await getRunningWorkflowIds();
+
         if (runningIds.includes(id)) {
             return false;
         }
+        // this._runningIdsProxy.set([id].concat(runningIds));
         this._runningWorkflowIds$.next([id].concat(runningIds));
-        // this._storageManager.setStorage(StorageKeys.RunningWorkflowIds, [id].concat(runningIds));
 
         return true;
     }
@@ -401,6 +398,10 @@ export class WorkflowService {
         this._workflowScraperReferenceMap.clear();
     }
 
+    updateWorkflow(workflow: IWorkflow) {
+        return this._dataSource.update(workflow);
+    }
+
     private async _executeRunWorkflow(workflow: IWorkflow) {
         const workflowId = workflow.id!;
 
@@ -416,47 +417,87 @@ export class WorkflowService {
             return;
         }
 
-        if (workflow.unitId) { // Workflow add incremental rows data to existing unit
-            // const removeDuplicatesColumnIds = workflow.rules.find((rule) => rule.name === WorkflowRuleName.RemoveDuplicate)?.payload;
-            // const columnIndexes = removeDuplicatesColumnIds && removeDuplicatesColumnIds.length > 0
-            //     ? removeDuplicatesColumnIds.map((columnId) => workflow.columns.findIndex((column) => column.id === columnId))
-            //     : undefined;
+        const callbacks = Array.from(this._onWorkflowDoneCallbacks);
 
-            // const apiResponse = await crxRequest.addRowCells({
-            //     unitId: workflow.unitId,
-            //     rows: res.rows,
-            //     columnIndexes,
-            // });
-            // Add row cells failed
-            // if (apiResponse.error.code !== 1) {
-            //     return;
-            // }
-        } else { // Workflow create new unit
-            const initialSheet = createEmptyInitialSheet();
+        await Promise.all(callbacks.map((callback) => callback({ ...res, workflow })));
 
-            initialSheet.sheetName = workflow.name;
-            initialSheet.rows = res.rows;
-            initialSheet.columnName = workflow.columns.map((c) => c.name);
+        // if (workflow.unitId) { // Workflow add incremental rows data to existing unit
+        //     this._tableService.appendWorkflowRows(workflow.unitId, {
+        //         workflow,
+        //         rows: res.rows,
+        //     });
+        //     // const removeDuplicatesColumnIds = workflow.rules.find((rule) => rule.name === WorkflowRuleName.RemoveDuplicate)?.payload;
+        //     // const columnIndexes = removeDuplicatesColumnIds && removeDuplicatesColumnIds.length > 0
+        //     //     ? removeDuplicatesColumnIds.map((columnId) => workflow.columns.findIndex((column) => column.id === columnId))
+        //     //     : undefined;
 
-            // const task = await handleAddTask({
-            //     recordType: RecordType.WorkflowSheet,
-            //     text: '',
-            //     time: Date.now(),
-            //     title: workflow.name,
-            //     originUrl: res.url,
-            //     sheets: [initialSheet],
-            //     triggerId: workflowId,
-            // });
+        //     // const apiResponse = await crxRequest.addRowCells({
+        //     //     unitId: workflow.unitId,
+        //     //     rows: res.rows,
+        //     //     columnIndexes,
+        //     // });
+        //     // Add row cells failed
+        //     // if (apiResponse.error.code !== 1) {
+        //     //     return;
+        //     // }
+        // } else { // Workflow create new unit
+        //     const initialSheet = createEmptyInitialSheet();
 
-            // const unitId = task?.data.unitId;
-            const unitId = '';
-            if (unitId) {
-                workflow.unitId = unitId;
-                this._dataSource.update({ ...workflow, unitId });
+        //     initialSheet.sheetName = workflow.name;
+        //     initialSheet.rows = res.rows;
+        //     initialSheet.columnName = workflow.columns.map((c) => c.name);
+
+        //     this._tableService.addTable({
+        //         record: {
+        //             // id: generateRandomId(),
+        //             recordType: TableRecordTypeEnum.WorkflowSheet,
+        //             title: workflow.name,
+        //             sourceUrl: res.url,
+        //         },
+        //         sheets: [initialSheet],
+        //         text: '',
+        //         triggerId: workflowId,
+        //     });
+
+        //     // const task = await handleAddTask({
+        //     //     recordType: RecordType.WorkflowSheet,
+        //     //     text: '',
+        //     //     time: Date.now(),
+        //     //     title: workflow.name,
+        //     //     originUrl: res.url,
+        //     //     sheets: [initialSheet],
+        //     //     triggerId: workflowId,
+        //     // });
+
+        //     // const unitId = task?.data.unitId;
+        //     const unitId = '';
+        //     if (unitId) {
+        //         workflow.unitId = unitId;
+        //         this._dataSource.update({ ...workflow, unitId });
+        //     }
+        // }
+
+        // this._onWorkflowDone$.next({ workflow, rows: res.rows });
+    }
+
+    onSendEmail(callback: (ctx: IWorkflowDoneContext) => void) {
+        return this._onSendEmail$.subscribe((ctx) => {
+            if (ctx) {
+                callback(ctx);
             }
-        }
+        });
+    }
 
-        this._onAfterWorkflowExecuted$.next({ workflow });
+    onWorkflowDone(callback: (ctx: IWorkflowDoneContext) => void) {
+        this._onWorkflowDoneCallbacks.add(callback);
+
+        return () => {
+            this._onWorkflowDoneCallbacks.delete(callback);
+        };
+    }
+
+    async pushWorkflowList(params: IGetWorkflowListParams) {
+        return pushDataSource(WorkflowDataSourceKeyEnum.WorkflowList, await this._dataSource.getList(params));
     }
 
     listenMessage() {
@@ -465,11 +506,12 @@ export class WorkflowService {
             | DeleteWorkflowMessage
             | CreateWorkflowMessage
             | UpdateWorkflowMessage
-            | GetDataSourceMessage<WorkflowDataSourceKeyEnum.WorkflowList, IGetWorkflowListParams>, sender) => {
+            | GetDataSourceMessage<WorkflowDataSourceKeyEnum.WorkflowList, IGetWorkflowListParams>
+            | GetDataSourceMessage<WorkflowDataSourceKeyEnum.RunningWorkflowIds>, sender) => {
             switch (req.type) {
                 case WorkflowMessageTypeEnum.CreateWorkflow: {
                     const { payload } = req;
-                    // this._storageManager.setStorage(StorageKeys.TabItem, TabKeys.Workflow);
+
                     const workflow = await this._dataSource.add(payload.workflow);
 
                     if (payload.toRun) {
@@ -483,15 +525,15 @@ export class WorkflowService {
                     break;
                 }
                 case WorkflowMessageTypeEnum.DeleteWorkflow: {
-                    this._dataSource.delete(req.payload);
+                    await this._dataSource.delete(req.payload);
+
+                    this.pushWorkflowList({ pageSize: defaultPageSize });
                     break;
                 }
 
                 case WorkflowMessageTypeEnum.UpdateWorkflow: {
                     const { payload } = req;
 
-                    // const workflow = await this._dataSource.add(payload.workflow);
-                    // this._storageManager.setStorage(StorageKeys.TabItem, TabKeys.Workflow);
                     this._dataSource.update(payload.workflow);
 
                     if (payload.toRun) {
@@ -511,14 +553,9 @@ export class WorkflowService {
                         const list = await this._dataSource.getList(payload.params);
 
                         pushDataSource(WorkflowDataSourceKeyEnum.WorkflowList, list);
-
-                        // const workListPromise = this._dataSource.getWorkflowList(req.payload as IGetWorkflowListParams ?? { pageSize: defaultPageSize });
-                        // this._workListPromise = workListPromise;
-                        // workListPromise.then((list) => {
-                        //     if (this._workListPromise === workListPromise) {
-                        //         sendWorkflowListDataSource(list);
-                        //     }
-                        // });
+                    }
+                    if (payload.key === WorkflowDataSourceKeyEnum.RunningWorkflowIds) {
+                        pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, this._runningWorkflowIds$.value);
                     }
                 }
             }
@@ -526,8 +563,8 @@ export class WorkflowService {
 
         chrome.windows.onRemoved.addListener((windowId) => {
             if (windowId === this.workflowWindow?.id) {
+                // this._runningIdsProxy.set([]);
                 this._runningWorkflowIds$.next([]);
-                // this._storageManager.setStorage(StorageKeys.RunningWorkflowIds, []);
             }
         });
     }

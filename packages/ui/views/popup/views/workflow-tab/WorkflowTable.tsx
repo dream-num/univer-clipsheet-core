@@ -1,36 +1,29 @@
+import type { DropdownMenuItem } from '@components/DropdownMenu';
+import { DropdownMenu } from '@components/DropdownMenu';
+import { Table } from '@components/Table';
 import type {
     IGetWorkflowListParams,
     IWorkflow,
     RunWorkflowMessage,
     StopWorkflowMessage,
-    // Message
 } from '@univer-clipsheet-core/workflow';
 import {
     minuteOptions,
-    // DataSourceKeys,
-    // defaultPageSize,
-    // minuteOptions,
-    // MsgType,
-    // StorageKeys,
     TimerRepeatMode,
     WorkflowDataSourceKeyEnum,
     WorkflowMessageTypeEnum,
-    WorkflowStorageKeyEnum } from '@univer-clipsheet-core/workflow';
+} from '@univer-clipsheet-core/workflow';
 import type { TableProps } from 'rc-table';
-import React, { useEffect, useMemo } from 'react';
-import { Table } from '@components/Table';
-import type { DropdownMenuItem } from '@components/DropdownMenu';
-import { DropdownMenu } from '@components/DropdownMenu';
-// import {  separateLineMenu, useDataSource, useStorageValue } from '@univer-clipsheet-core/shared-client';
+import { useEffect, useMemo } from 'react';
 
 import { RunButton } from '@components/buttons';
 import { MoreButton } from '@components/MoreButton';
-import { usePopupContext } from '@views/popup/context';
-import { t } from '@univer-clipsheet-core/locale';
-import { TableLoading } from '@components/TableLoading';
 import { separateLineMenu } from '@components/PopupMenus';
-import { useDataSource, useImmediateDataSource, useStorageValue } from '@lib/hooks';
+import { TableLoading } from '@components/TableLoading';
+import { useDataSource, useImmediateDataSource } from '@lib/hooks';
+import { t } from '@univer-clipsheet-core/locale';
 import { defaultPageSize } from '@univer-clipsheet-core/shared';
+import { usePopupContext } from '@views/popup/context';
 import { openWorkflowDialog } from './helper';
 
 const WorkflowTableEmptySvg = () => {
@@ -214,6 +207,7 @@ export const WorkflowTable = () => {
             return (
                 <div className="text-center">
                     <DropdownMenu
+                        placement="bottomRight"
                         menus={menus}
                         onChange={(key) => {
                             if (key === EditMenuKey.Delete) {

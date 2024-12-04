@@ -1,26 +1,5 @@
-import type { FC } from 'react';
-import React, { useMemo } from 'react';
 import clsx from 'clsx';
-
-const Icon: FC<{ className?: string; filename: string; onClick?: React.MouseEventHandler<HTMLImageElement> }> = (props) => {
-    const { className, filename, onClick } = props;
-    const sourceUrl = useMemo(() => chrome.runtime.getURL(`/popup/${filename}`), [filename]);
-
-    return (
-        <img onClick={onClick} className={className} src={sourceUrl} />
-    );
-};
-
-function iconFactory(factoryProps: { className?: string; filename: string }) {
-    const { filename } = factoryProps;
-
-    return (props: {
-        className?: string;
-        onClick?: React.MouseEventHandler<HTMLImageElement>;
-    }) => {
-        return <Icon onClick={props.onClick} className={clsx(factoryProps.className, props.className)} filename={filename}></Icon>;
-    };
-}
+import React from 'react';
 
 const AddSvg = () => {
     return (
@@ -54,9 +33,4 @@ function svgIconFactory(factoryProps: { icon: React.ReactNode }) {
 
 export const AddIcon = svgIconFactory({
     icon: <AddSvg />,
-});
-
-export const CloseIcon = iconFactory({
-    className: 'w-[14px] h-[14px]',
-    filename: 'close-icon.svg',
 });

@@ -1,0 +1,29 @@
+{
+    "name": "@univer-clipsheet-core/ajax-intercept",
+    "version": "0.0.1",
+    "private": true,
+    "description": "ajax-intercept code",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "clean": "rimraf ./dist && rimraf .turbo",
+        "build": "tsup index.ts --format esm,cjs --dts --external react,chrome",
+        "dev": "pnpm run build --watch",
+        "type-check": "tsc --noEmit"
+    },
+    "peerDependencies": {
+        "@wendellhu/redi": "0.16.1"
+    },
+    "dependencies": {
+        "@univer-clipsheet-core/shared": "workspace:*"
+    },
+    "devDependencies": {
+        "@univer-clipsheet-core/tailwindcss-config": "workspace:*",
+        "@univer-clipsheet-core/tsconfig": "workspace:*"
+    }
+}

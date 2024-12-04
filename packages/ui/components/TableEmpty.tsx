@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { TableEmptySvg } from './icons';
+import './tailwind.css';
 
 export interface ITableEmptyProps {
     className?: string;

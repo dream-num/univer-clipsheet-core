@@ -1,2 +1,2 @@
-export * from './ScraperForm';
-export * from './ScraperEditForm';
+
+export { type IScraperFormProps, ScraperForm } from './ScraperForm';

@@ -1,6 +1,7 @@
 import React, { forwardRef, memo, useCallback, useImperativeHandle } from 'react';
 import clsx from 'clsx';
 import { CloseSvg } from './icons';
+import './tailwind.css';
 
 export interface ScraperInputProps extends Omit<React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, 'ref' | 'onChange'> {
     closable?: boolean;

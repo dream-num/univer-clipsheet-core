@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type { FC } from 'react';
 import React from 'react';
-import './index.css';
+import './tailwind.css';
 
 const separateLineKey = 'separate-line' as const;
 
@@ -39,12 +39,12 @@ export const PopupMenus: FC<PopupMenusProps> = (props) => {
                             key={menu.key}
                             className={clsx('rounded-md text-gray-900 text-sm px-3 flex items-center h-8 cursor-pointer hover:bg-gray-100', menu.className)}
                             onMouseEnter={menu.disabled ? undefined : () => onMenuHover?.(menu, index)}
-                            onClick={menu.disabled
-                                ? undefined
-                                : (evt) => {
-                                    evt.stopPropagation();
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                if (menu.disabled) {
                                     onMenuClick?.(menu, index);
-                                }}
+                                }
+                            }}
                         >
                             {menu.text}
                         </li>

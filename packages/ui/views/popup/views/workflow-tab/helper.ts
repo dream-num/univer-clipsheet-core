@@ -5,14 +5,19 @@ import { ClipsheetMessageTypeEnum, closePopup, UIStorageKeyEnum } from '@univer-
 export function openWorkflowDialog(workflow?: Partial<IWorkflow>) {
     chrome.runtime.sendMessage({
         type: ClipsheetMessageTypeEnum.SetStorage,
-        key: UIStorageKeyEnum.WorkflowDialogVisible,
-        value: true,
+        payload: {
+            key: UIStorageKeyEnum.WorkflowDialogVisible,
+            value: true,
+
+        },
     });
 
     chrome.runtime.sendMessage({
         type: ClipsheetMessageTypeEnum.SetStorage,
-        key: WorkflowStorageKeyEnum.CurrentWorkflow,
-        value: workflow ?? null,
+        payload: {
+            key: WorkflowStorageKeyEnum.CurrentWorkflow,
+            value: workflow ?? null,
+        },
     });
     closePopup();
 }

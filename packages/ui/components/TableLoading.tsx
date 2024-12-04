@@ -1,5 +1,6 @@
 import { t } from '@univer-clipsheet-core/locale';
 import { LoadingMask } from './LoadingMask';
+import './tailwind.css';
 
 export const TableLoading = (props: {
     text: string;

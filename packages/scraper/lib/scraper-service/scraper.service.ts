@@ -1,25 +1,15 @@
-// import type { IDrillDownConfig, IScraper, ISheet_Row_Cell, MessageItem, ScraperTaskChannelResponse } from '@chrome-extension-boilerplate/shared';
-// import { createEmptyInitialSheet, DataSourceKeys, defaultPageSize, getScraperTaskChannelName, MsgType, RecordType, requestConnectChannel, ScraperColumnType, ScraperErrorCode, scraperTaskChannel, Sheet_Cell_Type_Enum, StorageKeys, TabKeys } from '@chrome-extension-boilerplate/shared';
-import { Inject } from '@wendellhu/redi';
-// import { crxRequest } from '../../api';
-// import { handleAddTask, sendDataSource } from '../../helper';
-// import { DrillDownManger } from '../drill-down-manager';
-// import { getStorage, StorageManager } from '../storage-manager';
-// import { UserManager } from '../user-manager';
-// import type { IGetScraperListParams } from './scraper-data-source';
-import type { GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
-import { createEmptyInitialSheet, Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
-import { ClipsheetMessageTypeEnum, getStorage, ObservableValue, pushDataSource, requestConnectChannel } from '@univer-clipsheet-core/shared';
-import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
 import { DrillDownService } from '@lib/drill-down-service';
+import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
+import type { GetDataSourceMessage, IMessage } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel } from '@univer-clipsheet-core/shared';
+import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
+import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
+import { Inject } from '@wendellhu/redi';
+import { getScraperTaskChannelName, scraperTaskChannel, type ScraperTaskChannelResponse } from './scraper-channel';
 import { IScraperDataSource } from './scraper-data-source';
 import { ScraperTab } from './scraper-tab';
 import type { CreateScraperMessage, DeleteScraperMessage, IGetScraperListParams, RunScraperFailedMessage, RunScraperMessage, StopScraperMessage, UpdateScraperMessage } from './scraper.message';
-import { ScraperDataSourceKeyEnum, ScraperMessageTypeEnum, ScraperStorageKeyEnum } from './scraper.message';
-import { getScraperTaskChannelName, scraperTaskChannel, type ScraperTaskChannelResponse } from './scraper-channel';
-
-// const getRunningScraperIds = async () => (await getStorage(ScraperStorageKeyEnum.RunningScraperIds)) || [];
+import { ScraperDataSourceKeyEnum, ScraperMessageTypeEnum } from './scraper.message';
 
 function waitFor(ms: number) {
     return new Promise<void>((resolve) => {
@@ -28,31 +18,29 @@ function waitFor(ms: number) {
 };
 
 export class ScraperService {
-    // private _dataSource: IScraperDataSource = n();
+    // private _runningIdsProxy = new StorageProxy<string[]>(UIStorageKeyEnum.RunningScrapingIds);
     private _runningScraperIds$ = new ObservableValue<string[]>([]);
     private _scraperTabMap: Map<string, ScraperTab> = new Map();
     private _tabToScraperTabMap: Map<number, ScraperTab> = new Map();
-    // private _scraperPromise: Promise<IScraper[]> | undefined;
 
     constructor(
         @Inject(IScraperDataSource) private _dataSource: IScraperDataSource,
-        // @Inject(StorageManager) private _storageManager: StorageManager,
-        // @Inject(UserManager) private _userManager: UserManager,
+        @Inject(TableService) private _tableService: TableService,
         @Inject(DrillDownService) private _drillDownService: DrillDownService
     ) {
-        this._runningScraperIds$.subscribe((runningIds) => {
-            const msg: PushDataSourceMessage = {
-                type: ClipsheetMessageTypeEnum.PushDataSource,
-                payload: {
-                    key: ScraperDataSourceKeyEnum.RunningScraperIds,
-                    value: runningIds,
-                },
-            };
+        // this._runningIdsProxy.onChange((ids) => {
 
-            chrome.runtime.sendMessage(msg);
-        });
-        // this._userManager.onUserChanged(async (user) => {
-        //     this._dataSource.local$.next(user.anonymous !== false);
+        // })
+        // this._runningScraperIds$.subscribe((runningIds) => {
+        //     const msg: PushDataSourceMessage = {
+        //         type: ClipsheetMessageTypeEnum.PushDataSource,
+        //         payload: {
+        //             key: ScraperDataSourceKeyEnum.RunningScraperIds,
+        //             value: runningIds,
+        //         },
+        //     };
+
+        //     chrome.runtime.sendMessage(msg);
         // });
     }
 
@@ -61,10 +49,6 @@ export class ScraperService {
             pageSize: ids.length,
             filterRecordIds: ids,
         });
-        // return this._dataSource.getScraperList({
-        //     pageSize: ids.length,
-        //     filterRecordIds: ids,
-        // });
     }
 
     async runScraper(runScraperInit: {
@@ -117,8 +101,6 @@ export class ScraperService {
     private async _removeFromRunningScraperIds(scraperId: string) {
         const { _runningScraperIds$ } = this;
         _runningScraperIds$.next(_runningScraperIds$.value.filter((id) => id !== scraperId));
-        // const runningScraperIds = await getRunningScraperIds();
-        // this._storageManager.setStorage(StorageKeys.RunningScraperIds, runningScraperIds.filter((id) => id !== scraperId));
     }
 
     async _addRunningScraperId(id: string) {
@@ -128,7 +110,6 @@ export class ScraperService {
             return false;
         }
         _runningScraperIds$.next([id].concat(runningIds));
-        // this._storageManager.setStorage(StorageKeys.RunningScraperIds, [id].concat(runningIds));
 
         return true;
     }
@@ -261,10 +242,6 @@ export class ScraperService {
                             payload: scraper,
                         };
                         chrome.runtime.sendMessage(msg);
-                        // chrome.runtime.sendMessage({
-                        //     type: MsgType.RunFailedNotification,
-                        //     scraper,
-                        // });
                     }
                 });
             },
@@ -290,15 +267,20 @@ export class ScraperService {
             return names;
         }, [] as string[]);
 
-        // handleAddTask({
-        //     recordType: RecordType.ScraperSheet,
-        //     text: '',
-        //     time: Date.now(),
-        //     title: scraper.name,
-        //     originUrl: scraper.url,
-        //     sheets: [initialSheet],
-        //     triggerId: scraper.id,
-        // });
+        this._tableService.addTable({
+            record: {
+                title: scraper.name,
+                sourceUrl: scraper.url,
+                recordType: TableRecordTypeEnum.ScraperSheet,
+            },
+            text: '',
+            sheets: [initialSheet],
+            triggerId: scraper.id,
+        });
+    }
+
+    async pushScraperList(params: IGetScraperListParams) {
+        return pushDataSource(ScraperDataSourceKeyEnum.ScraperList, await this._dataSource.getList(params));
     }
 
     listenMessage() {
@@ -357,7 +339,6 @@ export class ScraperService {
                 }
                 case ScraperMessageTypeEnum.CreateScraper: {
                     const { payload } = msg;
-                    // this._storageManager.setStorage(StorageKeys.TabItem, TabKeys.Scraper);
 
                     const res = await this._dataSource.add(payload.scraper);
 
@@ -369,7 +350,7 @@ export class ScraperService {
                 }
                 case ScraperMessageTypeEnum.UpdateScraper: {
                     const { payload } = msg;
-                    // this._storageManager.setStorage(StorageKeys.TabItem, TabKeys.Scraper);
+
                     await this._dataSource.update(payload.scraper);
 
                     if (payload.toRun) {
@@ -381,7 +362,11 @@ export class ScraperService {
                     const { payload: id } = msg;
                     this.stopScraper(id);
 
-                    this._dataSource.delete(id);
+                    await this._dataSource.delete(id);
+
+                    this.pushScraperList({
+                        pageSize: defaultPageSize,
+                    });
                     break;
                 }
                 case ScraperMessageTypeEnum.RunScraper: {

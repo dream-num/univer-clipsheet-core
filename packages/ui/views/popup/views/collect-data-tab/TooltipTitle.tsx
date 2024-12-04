@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import React from 'react';
-import Tooltip from 'rc-tooltip';
 import clsx from 'clsx';
+import { Tooltip } from '@components/tooltip';
 
 export const TooltipTitle: FC<{
     href?: string;

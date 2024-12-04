@@ -1,16 +1,16 @@
-import Tooltip from 'rc-tooltip';
+
 import type { FC, PropsWithChildren } from 'react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { IPopupMenu } from './PopupMenus';
 import { PopupMenus } from './PopupMenus';
-import './index.css';
-import 'rc-tooltip/assets/bootstrap.css';
+import './tailwind.css';
+import { Tooltip } from './tooltip';
 
 export interface IDropdownMenuProps {
     width?: number;
     visible?: boolean;
     disabled?: boolean;
-    placement?: 'top' | 'bottom';
+    placement?: string;
     onVisibleChange?: (visible: boolean) => void;
     onChange?: (value: string) => void;
     onMouseLeave?: () => void;
@@ -74,11 +74,11 @@ export const DropdownMenu: FC<PropsWithChildren<IDropdownMenuProps>> = (props) =
 
     return (
         <Tooltip
+            white
             align={{
                 autoArrow: true,
-                offset: [0, placement === 'bottom' ? -6 : 6],
+                offset: [0, placement.startsWith('bottom') ? -6 : 6],
             }}
-            overlayClassName="white-tooltip"
             overlayInnerStyle={{ padding: 0 }}
             showArrow={false}
             placement={placement}

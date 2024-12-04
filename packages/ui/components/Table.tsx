@@ -2,6 +2,7 @@ import { clsx } from 'clsx';
 import type { TableProps as RCTableProps } from 'rc-table';
 import RCTable from 'rc-table';
 import React, { useMemo } from 'react';
+import './tailwind.css';
 
 const columnClassName = 'border-b border-[#EEEFF1] text-left text-[#5F6574] font-semibold font-xs';
 

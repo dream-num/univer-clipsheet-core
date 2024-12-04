@@ -1,36 +1,31 @@
-// import type { ISheetTask } from '@univer-clipsheet-core/shared';
-// import { joinUnitUrl, TableRecordTypeEnum, TableRecordStatusEnum } from '@univer-clipsheet-core/shared';
-import type {
-    ITableRecord } from '@univer-clipsheet-core/table';
-import {
-    deleteTaskRecord,
-    TableRecordStatusEnum,
-    TableRecordTypeEnum } from '@univer-clipsheet-core/table';
-import { Table } from '@components/Table';
-import type { TableProps } from 'rc-table';
-import { useCallback, useMemo } from 'react';
 
-import 'rc-tooltip/assets/bootstrap.css';
-// import { CollectButton } from '@src/components/CollectButton';
-// import type { DropdownMenuItem } from '@univer-clipsheet-core/shared-client';
-import type { DropdownMenuItem } from '@components/DropdownMenu';
+import { Table } from '@components/Table';
+import type {
+    ITableRecord,
+} from '@univer-clipsheet-core/table';
+import {
+    inProgressTableRecordId,
+    TableRecordStatusEnum,
+    TableRecordTypeEnum,
+    triggerRecordTypes,
+} from '@univer-clipsheet-core/table';
+import type { TableProps } from 'rc-table';
+import { useEffect, useMemo } from 'react';
+
 import { DropdownMenu } from '@components/DropdownMenu';
-import { separateLineMenu } from '@components/PopupMenus';
 import { TableEmptySvg, XLSXSvg } from '@components/icons';
 import { TableLoading } from '@components/TableLoading';
-import dayjs from 'dayjs';
-import Tooltip from 'rc-tooltip';
-// import type { DropdownMenuItem } from '@src/components/DropdownMenu';
+import { Tooltip } from '@components/tooltip';
+import { useObservableValue } from '@lib/hooks';
 import { isZhCN, t } from '@univer-clipsheet-core/locale';
-import { useTableRecords } from '../hooks';
+import { defaultPageSize } from '@univer-clipsheet-core/shared';
+import dayjs from 'dayjs';
+import { MoreButton } from '@components/MoreButton';
 import { usePopupContext } from '../../context';
-import { openWorkflowDialog } from '../workflow-tab/helper';
-import { MoreButton } from '../../../../components/MoreButton';
+import { useTableRecords } from '../hooks';
+import { StatusIcon } from './StatusIcon';
 import { TableRecordItem } from './TableRecordItem';
 import { TooltipTitle } from './TooltipTitle';
-import { StatusIcon } from './StatusIcon';
-
-// type TableRecordSheet = ITableRecord['sheet'];
 
 const DataTableEmpty = (props: {
     onClick?: () => void;
@@ -53,45 +48,25 @@ export interface ICollectDataTableProps {
     onEmptyClick: () => void;
 }
 
-const triggerRecordTypes = [TableRecordTypeEnum.ScraperSheet, TableRecordTypeEnum.WorkflowSheet];
-
-enum MoreMenuKey {
-    Api = 'api',
-    Schedule = 'schedule',
-    Delete = 'delete',
-}
-
 export const CollectDataTable = (props: ICollectDataTableProps) => {
     const { onEmptyClick } = props;
 
-    const { searchInput, timeFormat } = usePopupContext();
-    const { state: innerData, loading } = useTableRecords();
-    // const [inProgressTask] = useStorageValue<null | ITask>(StorageKeys.InProgressTask, null);
-    // const [innerData, setInnerData] = useState<ISheetTask[]>([]);
-    // const [loading, setLoading] = useState(true);
+    const { searchInput, timeFormat, service: popupViewService } = usePopupContext();
+    const { state: innerData, getState: getInnerData, loading } = useTableRecords();
 
-    // useEffect(() => {
-    //     setLoading(true);
-    //     chrome.runtime.sendMessage({
-    //         type: MsgType.RequestTaskList,
-    //         page: 1,
-    //         pageSize: 2000,
-    //     });
+    useEffect(() => {
+        getInnerData({
+            page: 1,
+            pageSize: defaultPageSize,
+            recordTypes: [
+                TableRecordTypeEnum.Sheet,
+                TableRecordTypeEnum.ScraperSheet,
+                TableRecordTypeEnum.WorkflowSheet,
+            ],
+        });
+    }, []);
 
-    //     const listener = (msg: Message[MsgType.SendTaskList]) => {
-    //         if (msg.type !== MsgType.SendTaskList) {
-    //             return;
-    //         }
-    //         setInnerData(msg.tasks);
-    //         setLoading(false);
-    //     };
-
-    //     chrome.runtime.onMessage.addListener(listener);
-
-    //     return () => {
-    //         chrome.runtime.onMessage.removeListener(listener);
-    //     };
-    // }, []);
+    const [tableRecordMoreMenuRender] = useObservableValue(popupViewService ? popupViewService.tableRecordMoreMenuRender$ : undefined);
 
     const taskList = useMemo(() => {
         if (!searchInput) {
@@ -99,36 +74,27 @@ export const CollectDataTable = (props: ICollectDataTableProps) => {
         }
 
         const lowerSearchInput = searchInput.toLowerCase();
-        const filteredTaskList = innerData.filter((task) => {
-            const title = task.sheet.title.toLowerCase();
+        const filteredTaskList = innerData.filter((record) => {
+            const title = record.title.toLowerCase();
 
             return title.includes(lowerSearchInput);
         });
         return filteredTaskList;
     }, [innerData, searchInput]);
 
-    const sheetClick = useCallback((task: ITableRecord) => {
-        if (task.status !== TableRecordStatusEnum.Success) {
-            // do something
-        }
-
-        // chrome.tabs.create({ url: joinUnitUrl(baseUrl, task.unitId) });
-    }, []);
     const localeTimeFormat = isZhCN() ? 'YYYY-MM-DD HH:mm' : 'MMMM D, YYYY h:mm A';
 
     const columns: TableProps['columns'] = [
-        { title: <span className="pl-4">Name</span>, width: 480, render: (value, record: ITableRecord) => {
-            const { sheet } = record;
-            const title = sheet.title || sheet.originUrl;
-            const time = sheet.createdAt;
+        { title: <span className="pl-4">Name</span>, width: 480, render: (value, record: ITableRecord<unknown>) => {
+            const inProgress = record.id === inProgressTableRecordId;
+
+            const title = record.title || record.sourceUrl;
+            const time = record.createdAt;
 
             const taskTimeFormat = timeFormat(time);
-                // : t('RemainingDays', {
-                //     day: String(7 - dayjs().diff(dayjs(time), 'day')),
-                // });
 
-            const titleComponent = record.status === TableRecordStatusEnum.Success
-                ? <TooltipTitle onClick={() => sheetClick(record)} className="max-w-[208px]" title={title} />
+            const titleComponent = !inProgress
+                ? <TooltipTitle onClick={() => popupViewService?.triggerTableRecordClick(record)} className="max-w-[208px]" title={title} />
                 : <span className="max-w-[208px] inline-block text-ellipsis text-nowrap overflow-hidden">{title}</span>;
 
             const footer = (
@@ -145,43 +111,21 @@ export const CollectDataTable = (props: ICollectDataTableProps) => {
                 <TableRecordItem
                     title={titleComponent}
                     icon={<XLSXSvg />}
-                    titleIcon={<StatusIcon className="ml-2" status={record.status} />}
+                    titleIcon={<StatusIcon className="ml-2" status={inProgress ? TableRecordStatusEnum.InProgress : TableRecordStatusEnum.Success} />}
                     footer={footer}
                 />
             );
         } },
         { title: <div className="text-center">{t('More')}</div>, width: 68, render: (value, record: ITableRecord, index) => {
-            const isTriggerRecord = triggerRecordTypes.includes(record.recordType);
-            const showSchedule = isTriggerRecord;
-            const menus: DropdownMenuItem[] = [
-                // {
-                //     text: t('GenerateAPI'),
-                //     key: MoreMenuKey.Api,
-                // },
-                showSchedule && {
-                    text: t('ScheduleDataUpdate'),
-                    key: MoreMenuKey.Schedule,
-                },
-                showSchedule && separateLineMenu,
-                {
-                    text: <span className="text-[#F05252]">{t('Delete')}</span>,
-                    key: MoreMenuKey.Delete,
-                },
-            ].filter(Boolean) as DropdownMenuItem[];
+            const menus = tableRecordMoreMenuRender?.(record) ?? [];
 
             return (
                 <div className="text-center">
                     <DropdownMenu
+                        placement="bottomRight"
                         menus={menus}
                         onChange={(key) => {
-                            if (key === MoreMenuKey.Delete) {
-                                deleteTaskRecord(record.id, index);
-                            }
-                            if (key === MoreMenuKey.Schedule) {
-                                openWorkflowDialog({
-                                    unitId: record.sheet.unitId,
-                                });
-                            }
+                            popupViewService?.triggerTableMoreMenuClick(key, record);
                         }}
                     >
                         <MoreButton />

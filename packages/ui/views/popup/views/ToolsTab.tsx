@@ -1,41 +1,38 @@
-import React, { useCallback, useContext } from 'react';
+import { useCallback, useEffect } from 'react';
 
-// import type { ISheetTask, Message } from '@univer-clipsheet-core/shared';
-import type {
-    ClientScrapAllTablesMessage } from '@univer-clipsheet-core/shared';
 import {
     captureEvent,
     ClientMessageTypeEnum,
-    closePopup,
     getActiveTab,
-    // joinUnitUrl,
-    // MsgType,
-    // StorageKeys,
-    // TelemetryEvents,
     UIStorageKeyEnum,
 } from '@univer-clipsheet-core/shared';
-// import { useStorageValue } from '@univer-clipsheet-core/shared-client';
-import { clsx } from 'clsx';
-// import type { ITab } from '@src/components/TabList';
-import { t } from '@univer-clipsheet-core/locale';
-import { type ITableRecord, TableMessageTypeEnum } from '@univer-clipsheet-core/table';
-import { useStorageValue } from '@lib/hooks';
+
 import { CollectEntirePageSvg, LoadingSvg } from '@components/icons';
-// import { PopupContext } from '../context';
-// import { CollectEntirePageSvg, DrillDownGradientIcon, LoadingSvg, useTaskList } from '../components';
+import { useStorageValue } from '@lib/hooks';
+import { t } from '@univer-clipsheet-core/locale';
+import { type ITableRecord, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
+import { clsx } from 'clsx';
+import { usePopupContext } from '../context';
 import { useTableRecords } from './hooks';
 
 enum ToolsKey {
-    // DrillDownSelectorCopy,
     CollectEntirePage,
 }
 
 export const ToolsTab = () => {
-    // const {  baseUrl } = useContext(PopupContext);
+    const { service } = usePopupContext();
     const [loading, setLoading] = useStorageValue<boolean>(UIStorageKeyEnum.Loading, false);
-    const { state: taskList } = useTableRecords();
-    // const { tasks: taskList } = useTaskList({ page: 1, pageSize: 1, recordTypes: [RecordType.WholeSheet] });
-    const allSheetsTask = taskList[0] as ITableRecord;
+
+    const { state: taskList, getState } = useTableRecords();
+    useEffect(() => {
+        getState({
+            page: 1,
+            pageSize: 1,
+            recordTypes: [TableRecordTypeEnum.WholeSheet],
+        });
+    }, []);
+
+    const tableRecord = taskList[0] as ITableRecord;
 
     const collectSingleTab = useCallback(async (tab: chrome.tabs.Tab) => {
         const tabId = tab.id;
@@ -43,17 +40,9 @@ export const ToolsTab = () => {
             return;
         }
         setLoading(true);
-        // const time = Date.now();
 
-        // const msg: Message[MsgType.RequestAllSheets] = {
-        //     type: MsgType.RequestAllSheets,
-        //     windowId: tab.windowId,
-        //     tabId,
-        //     time,
-        // };
         chrome.tabs.sendMessage(tabId, {
             type: ClientMessageTypeEnum.ScrapAllTables,
-            // payload: null,
         });
     }, []);
 
@@ -86,13 +75,6 @@ export const ToolsTab = () => {
         }
     }, [taskList, loading]);
 
-    const recentlyFileClick = useCallback(() => {
-        const task = taskList[0];
-        if (task) {
-            // chrome.tabs.create({ url: joinUnitUrl(baseUrl, task.data.unitId) });
-        }
-    }, [taskList]);
-
     return (
         <div className="text-sm py-4  rounded-xl  p-4">
             <ul className="flex flex-col gap-4">
@@ -119,12 +101,12 @@ export const ToolsTab = () => {
                         <div className="text-[#878F9B] text-xs">{t('CollectEntireWebPageSubText')}</div>
                     </div>
                 </li>
-                {allSheetsTask && (
+                {tableRecord && (
                     <li className="flex justify-center">
                         <div className="inline-flex items-center">
                             {loading && <LoadingSvg className="mr-[6px] text-[#0B9EFB] animate-spin" />}
                             <a
-                                onClick={loading ? undefined : recentlyFileClick}
+                                onClick={loading ? undefined : () => service?.triggerTableRecordClick(tableRecord)}
                                 className={clsx('text-[#274FEE] underline', {
                                     'cursor-pointer': !loading,
                                 })}

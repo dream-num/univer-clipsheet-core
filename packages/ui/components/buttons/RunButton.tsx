@@ -2,6 +2,7 @@
 import React from 'react';
 import { t } from '@univer-clipsheet-core/locale';
 import { LoadingSvg } from '../icons';
+import '../tailwind.css';
 
 export interface IRunButtonProps {
     running: boolean;

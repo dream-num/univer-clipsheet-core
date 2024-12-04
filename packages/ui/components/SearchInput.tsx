@@ -1,6 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import './index.css';
+import './tailwind.css';
 
 const SearchSvg = () => {
     return (

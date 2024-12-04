@@ -4,7 +4,6 @@ import { Channel } from '@univer-clipsheet-core/shared';
 
 export interface DrillDownTaskChannelRequest {
     selectors: string[];
-    // channelName: string;
 }
 export interface DrillDownTaskChannelResponse {
     items: Array<{

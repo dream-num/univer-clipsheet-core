@@ -17,7 +17,6 @@ export enum AutoExtractionMode {
 export interface IScrollAutoExtractionConfig {
     minInterval: number;
     maxInterval: number;
-    // targetSelector: string;
 }
 
 export interface IClickAutoExtractionConfig extends IScrollAutoExtractionConfig {
@@ -26,20 +25,12 @@ export interface IClickAutoExtractionConfig extends IScrollAutoExtractionConfig 
 }
 
 export interface IPageUrlAutoExtractionConfig {
-    // targetSelector: string;
     templateUrl: string;
     startPage: number;
     endPage: number;
 }
 
 export type AutoExtractionConfig = IScrollAutoExtractionConfig | IClickAutoExtractionConfig | IPageUrlAutoExtractionConfig;
-
-// export enum ScraperColumnType {
-//     Text = 1,
-//     Url,
-//     Image,
-//     Video,
-// }
 
 export interface IDrillDownConfig {
     parentId?: string;
@@ -66,7 +57,6 @@ export interface IScraper {
     url: string;
     name: string;
     description?: string;
-    // running: boolean;
     targetSelector: string;
     mode: AutoExtractionMode;
     config?: AutoExtractionConfig;

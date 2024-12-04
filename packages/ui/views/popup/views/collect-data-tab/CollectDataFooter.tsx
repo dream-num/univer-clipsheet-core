@@ -1,15 +1,13 @@
 import { ArrowGradientSvg, ClickPointSvg } from '@components/icons';
-import React, { forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { Message } from '@components/message';
 import { DropdownMenu } from '@components/DropdownMenu';
 import { closePopup, getActiveTab, promisifyMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { DropdownMenuItem } from '@components/DropdownMenu';
-import type { HighlightDetectedTableMessage, IDetectedTableOption, PushDetectTablesMessage, RequestDetectTablesMessage, ScrapDetectedTableMessage } from '@views/client';
-import { DetectTablesMessageTypeEnum } from '@views/client';
+import type { HighlightDetectedTableMessage, IDetectedTableOption, PushDetectTablesMessage, RequestDetectTablesMessage, ScrapDetectedTableMessage } from '@client/index';
+import { DetectTablesMessageTypeEnum } from '@client/index';
 import { useDebounceCallback, useStorageValue } from 'lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
-import { PopupContext } from '../../context';
 
 function useDetectedTableList() {
     const [tableList, setTableList] = useState<IDetectedTableOption[]>([]);
@@ -22,12 +20,10 @@ function useDetectedTableList() {
             }
             const request: RequestDetectTablesMessage = {
                 type: DetectTablesMessageTypeEnum.RequestDetectTables,
-                // payload: null,
             };
             chrome.tabs.sendMessage(tabId, request);
             promisifyMessage<PushDetectTablesMessage>((msg) => msg.type === DetectTablesMessageTypeEnum.PushDetectTables)
                 .then((msg) => {
-                    console.log('PushDetectTablesMessage', msg);
                     setTableList(msg.payload);
                 });
         });
@@ -37,7 +33,6 @@ function useDetectedTableList() {
 }
 
 export interface ICollectDataFooterProps {
-    // onScrapingClick: () => void;
     className?: string;
     onManuallySelectClick?: () => void;
 }
@@ -59,8 +54,9 @@ const InnerCollectDataFooter = forwardRef<ICollectDataFooterRef, ICollectDataFoo
 
     const [selectOptionsVisible, setSelectOptionsVisible] = useState(false);
     const [loading] = useStorageValue<boolean>(UIStorageKeyEnum.Loading, false);
+
     const detectedTableList = useDetectedTableList();
-    console.log('detectedTableList', detectedTableList);
+
     const tableOptions = useMemo(() => detectedTableList.map((table, index) => ({ text: `${t('Table')} ${index + 1} ${t('Rows')}: ${table.rows}`, key: table.id })), [detectedTableList]);
     const [selectedTableId, setSelectedTableId] = useState<string>('');
     const selectedTableIndex = useMemo(() => detectedTableList.findIndex((table) => table.id === selectedTableId), [detectedTableList, selectedTableId]);
@@ -158,7 +154,6 @@ const InnerCollectDataFooter = forwardRef<ICollectDataFooterRef, ICollectDataFoo
                 <div className="flex items-center">
                     <DropdownMenu
                         width={scrapButtonRef?.current?.clientWidth}
-                        // value={selectedTableId}
                         visible={selectOptionsVisible}
                         menus={tableOptions}
                         onChange={(id) => {

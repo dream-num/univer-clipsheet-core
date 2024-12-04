@@ -5,7 +5,6 @@ import { linearGradientBackground } from './constants';
 export interface IStepItem {
     text: string;
     key: string;
-    // title: string;
 }
 
 export interface IStepsProps {

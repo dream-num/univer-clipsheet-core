@@ -1,6 +1,4 @@
-// import type { DrillDownTaskChannelResponse, Message, MessageItem } from '@chrome-extension-boilerplate/shared';
 import { requestConnectChannel } from '@univer-clipsheet-core/shared';
-import { Inject } from '@wendellhu/redi';
 import { drillDownTaskChannel, getDrillDownTaskChannelName } from './drill-down-channel';
 
 import type { DrillDownTaskChannelResponse } from './drill-down-channel';
@@ -63,7 +61,6 @@ export class DrillDownService {
     }
 
     listenMessage() {
-        // const { _drillDownService } = this;
         chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             if (changeInfo.status === 'complete') {
                 const drillDownContext = this.getContext(tabId);
@@ -86,26 +83,5 @@ export class DrillDownService {
                 requestConnectChannel(channelName, tabId);
             }
         });
-
-        // chrome.runtime.onMessage.addListener(async (msg: RequestDrillDownMessage, sender) => {
-        //     const senderTabId = sender.tab?.id;
-        //     if (!senderTabId) {
-        //         return;
-        //     }
-
-        //     switch (msg.type) {
-        //         case DrillDownMessageTypeEnum.RequestDrillDown: {
-        //             const { payload } = msg;
-        //             const result = await _drillDownService.runDrillDown(payload.url, payload.selectors);
-
-        //             const response: ResponseDrillDownMessage = {
-        //                 type: DrillDownMessageTypeEnum.ResponseDrillDown,
-        //                 payload: result.items,
-        //             };
-
-        //             chrome.tabs.sendMessage(senderTabId, response);
-        //         }
-        //     }
-        // });
     }
 }

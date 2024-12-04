@@ -4,13 +4,15 @@ import 'rc-select/assets/index.css';
 import dayjs from 'dayjs';
 import { t } from '@univer-clipsheet-core/locale';
 import type { IWorkflowSchedule } from '@univer-clipsheet-core/workflow';
-import { minuteOptions, TimerRepeatMode, WorkflowTriggerName } from '@univer-clipsheet-core/workflow';
+import { minuteOptions, TimerRepeatMode } from '@univer-clipsheet-core/workflow';
 import { useWorkflowPanelContext } from '@views/workflow-panel/context';
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';
 import { DatePicker } from '@components/date-picker';
 import { Select } from '@components/select';
+import { useObservableValue } from '@lib/hooks';
 import { createCustomTimerRule, CustomTimerForm } from './CustomTimerForm';
+import { EmailNotificationTriggerControl } from './EmailNotificationTriggerControl';
 
 export const repeatModeOptions = [
     {
@@ -43,15 +45,14 @@ export const repeatModeOptions = [
     },
 ];
 
-const emailCheckboxId = 'send_email';
-
 export const TimerForm = () => {
-    const { workflow: _workflow, setWorkflow } = useWorkflowPanelContext();
+    const { workflow: _workflow, service, setWorkflow } = useWorkflowPanelContext();
+
+    const [emailNotificationTriggerControl] = useObservableValue(service?.emailNotificationTriggerControl$);
+
     const workflow = _workflow!;
 
-    const triggers = workflow?.triggers ?? [];
     const schedule = workflow?.schedule;
-    const emailTriggerIndex = triggers?.findIndex((trigger) => trigger.name === WorkflowTriggerName.EmailNotification);
 
     const customTimerRule = workflow.schedule.customRule ?? createCustomTimerRule();
 
@@ -114,7 +115,7 @@ export const TimerForm = () => {
                                     },
                                 });
                             }}
-                            className="w-full"
+                            className="!w-full"
                             options={minuteOptions}
                         >
                         </Select>
@@ -136,7 +137,7 @@ export const TimerForm = () => {
 
                                 setWorkflow?.(newWorkflow);
                             }}
-                            className="w-full"
+                            className="!w-full"
                             options={repeatModeOptions}
                         >
                         </Select>
@@ -155,33 +156,7 @@ export const TimerForm = () => {
                     />
                 )}
             </div>
-            <div>
-
-                <div className="flex items-center ">
-                    <input
-                        id={emailCheckboxId}
-                        checked={emailTriggerIndex !== -1}
-                        onChange={(evt) => {
-                            const checked = evt.target.checked;
-                            if (checked) {
-                                setWorkflow?.({
-                                    ...workflow,
-                                    triggers: triggers.concat([{ name: WorkflowTriggerName.EmailNotification, payload: null }]),
-                                });
-                            } else {
-                                setWorkflow?.({
-                                    ...workflow,
-                                    triggers: triggers.filter((trigger) => trigger.name !== WorkflowTriggerName.EmailNotification),
-                                });
-                            }
-                        }}
-                        type="checkbox"
-                        className="w-4 h-4 mr-2"
-                    />
-                    <label htmlFor={emailCheckboxId} className="text-sm cursor-pointer">{t('SendEmailAfterExecution')}</label>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">{t('WorkflowSendEmailTips')}</div>
-            </div>
+            {emailNotificationTriggerControl && <EmailNotificationTriggerControl workflow={workflow} onChange={setWorkflow} />}
         </div>
     );
 };

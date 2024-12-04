@@ -11,6 +11,12 @@ export function setStorage(key: string, value: any) {
     });
 }
 
+export async function setAndPushStorage(key: string, value: any, tabId?: number) {
+    await setStorage(key, value);
+
+    return pushStorage(key, value, tabId);
+}
+
 export async function removeStorage(key: string | string[]) {
     return chrome.storage.local.remove(key);
 }

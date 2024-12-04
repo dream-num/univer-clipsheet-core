@@ -1,11 +1,3 @@
-// import type { IWorkflowColumn, WorkflowRemoveDuplicateRule } from '@chrome-extension-boilerplate/shared';
-// import { WorkflowRuleName } from '@chrome-extension-boilerplate/shared';
-// import { ColumnTypeTag } from '@chrome-extension-boilerplate/shared-client';
-// import { useWorkflowPanelContext } from '@src/context';
-// import { t } from '@src/locale';
-// import type { ColumnListItem } from '../../../components/ColumnList';
-// import { ColumnList } from '../../../components/ColumnList';
-
 import type { IWorkflowColumn, WorkflowRemoveDuplicateRule } from '@univer-clipsheet-core/workflow';
 import { WorkflowRuleName } from '@univer-clipsheet-core/workflow';
 import { ColumnTypeTag } from '@components/ColumnTypeTag';
@@ -30,8 +22,7 @@ export const RemoveDuplicateForm = () => {
     const ruleIndex = rules.findIndex((r) => r.name === WorkflowRuleName.RemoveDuplicate);
     const rule = rules[ruleIndex] as WorkflowRemoveDuplicateRule | undefined;
     const columnValues = rule?.payload ?? [];
-    // console.log(rule?.payload, 'rule payload');
-    // console.log(columns, 'columns');
+
     const setColumnValues = (values: string[]) => {
         const innerWorkflow = workflow!;
 

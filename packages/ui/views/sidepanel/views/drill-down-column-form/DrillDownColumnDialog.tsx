@@ -1,12 +1,8 @@
-// import type { IDrillDownColumn } from '@chrome-extension-boilerplate/shared';
-// import { coverHelper, generateRandomId, requestElementInspection, requestUpperElement } from '@chrome-extension-boilerplate/shared';
 
-// import { Dialog } from '@src/components/Dialog';
 import { useEffect, useState } from 'react';
-// import { t } from '../../locale';
 import type { IDrillDownColumn } from '@univer-clipsheet-core/scraper';
 import { Dialog } from '@components/Dialog';
-import { coverHelper, requestElementInspection, requestUpperElement } from '@views/client';
+import { coverHelper, requestElementInspection, requestUpperElement } from '@client/index';
 import { generateRandomId } from '@univer-clipsheet-core/shared';
 import { t } from '@univer-clipsheet-core/locale';
 import { DrillDownColumnFormItem } from './DrillDownColumnFormItem';

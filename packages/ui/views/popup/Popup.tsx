@@ -1,6 +1,7 @@
 import type {
     UIOpenTableScrapingDialogMessage,
-    UIPopupShowedMessage } from '@univer-clipsheet-core/shared';
+    UIPopupShowedMessage,
+} from '@univer-clipsheet-core/shared';
 import {
     captureEvent,
     closePopup,
@@ -9,35 +10,31 @@ import {
     PingSignalKeyEnum,
     UIMessageTypeEnum,
 } from '@univer-clipsheet-core/shared';
-
 import type { IMessageRef } from '@components/message';
 import { Message as MessageComponent } from '@components/message';
 import { SearchInput } from '@components/SearchInput';
-
-import '@views/popup/Popup.css';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
-import 'rc-tooltip/assets/bootstrap.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-import { t } from '@univer-clipsheet-core/locale';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     DataTabSvg,
     ScraperSvg,
     ToolsSvg,
     UniverLogoSvg,
-    WorkflowSvg } from '@components/icons';
-
+    WorkflowSvg,
+} from '@components/icons';
+import { t } from '@univer-clipsheet-core/locale';
 import { useThrottle } from '@lib/hooks';
 import type { IPopupContext } from './context';
-import { PopupContext, usePopupContext } from './context';
-
+import { PopupContext } from './context';
 import type { ICollectDataFooterRef } from './views/collect-data-tab';
 import { CollectDataFooter, CollectDataTable } from './views/collect-data-tab';
-
 import { ScraperTable } from './views/scraper-tab';
 import { ToolsTab } from './views/ToolsTab';
 import { WorkflowFooter, WorkflowTable } from './views/workflow-tab';
+
+import '@views/popup/Popup.css';
+import type { PopupViewService } from './popup-view.service';
 
 enum TabKeys {
     Data = 'data',
@@ -85,13 +82,13 @@ function formatTimeAgo(timestamp: number): string {
     const diffYears = now.diff(inputDate, 'year');
 
     if (diffYears >= 1) {
-        // 超过1年，显示完整日期时间
+        // Display year-month-day time
         return inputDate.format('YYYY-MM-DD HH:mm');
     } else if (diffMonths >= 1) {
-        // 超过1个月，显示月日时间
+        // Display month-day time
         return inputDate.format('MM-DD HH:mm');
     } else {
-        // 小于1个月，使用相对时间
+        // Display relative time age from now
         const diffDays = now.diff(inputDate, 'day');
         const diffHours = now.diff(inputDate, 'hour');
         const diffMinutes = now.diff(inputDate, 'minute');
@@ -111,7 +108,13 @@ function formatTimeAgo(timestamp: number): string {
     }
 }
 
-export function Popup() {
+export interface IPopupProps {
+    sideAffix?: React.ReactNode;
+    service: PopupViewService<any>;
+}
+
+function InnerPopup(props: IPopupProps) {
+    const { sideAffix, service } = props;
     const messageRef = useRef<IMessageRef>(null);
     const [tabKey, setTabKey] = useState<TabKeys>(TabKeys.Scraper);
 
@@ -139,39 +142,23 @@ export function Popup() {
     }, []);
 
     const handleManuallySelect = useCallback(async () => {
-        // if (!activeTab) {
-        //     return;
-        // }
-
         const activeTab = await getActiveTab();
+        const tabId = activeTab.id;
+        if (!tabId) {
+            return;
+        }
 
         captureEvent('clipsheet_accurate_extraction_click', {
             url: activeTab.url,
         });
+
         const message: UIOpenTableScrapingDialogMessage = {
             type: UIMessageTypeEnum.OpenTableScrapingDialog,
-            // payload: null,
         };
 
-        chrome.tabs.sendMessage(activeTab.id!, message);
+        chrome.tabs.sendMessage(tabId, message);
         closePopup();
     }, []);
-
-    // useEffect(() => {
-    //     const html = document.querySelector('html');
-    //     if (html) {
-    //         if (tabKey === TabKeys.ProSearch) {
-    //             html.style.height = '600px';
-    //         } else {
-    //             const designHtmlHeight = contextConnected ? 544 : 568;
-    //             const alertHeight = 32;
-
-    //             html.style.height = `${alertVisible ? designHtmlHeight + alertHeight : designHtmlHeight}px`;
-    //         }
-    //     }
-    // }, [alertVisible, contextConnected, tabKey]);
-
-    // const [baseUrl] = useStorageValue(StorageKeys.BaseUrl, '');
 
     const [searchInput, setSearchInput] = useState('');
     const throttledSearchInput = useThrottle(searchInput, 400);
@@ -179,17 +166,12 @@ export function Popup() {
     const contextValue: IPopupContext = useMemo(() => {
         const showMessage: IMessageRef['showMessage'] = (option) => messageRef.current?.showMessage(option);
         return {
-            t,
-            // user,
+            service,
             searchInput: throttledSearchInput,
-            // alertVisible,
-            // contextConnected,
-            // activeTab,
             showMessage,
-            // baseUrl,
             timeFormat: formatTimeAgo,
         };
-    }, [throttledSearchInput]);
+    }, [service, throttledSearchInput]);
 
     const collectDataFooterRef = useRef<ICollectDataFooterRef>(null);
 
@@ -246,7 +228,9 @@ export function Popup() {
                 <div className="flex p-3">
                     <aside className="flex-shrink-0 h-[444px] bg-white rounded-xl shadow px-2 pt-4 pb-3 flex flex-col justify-between items-center">
                         <div>
-                            <UniverLogoSvg onClick={() => chrome.tabs.create({ url: 'https://univer.ai' })} />
+                            <div className="flex justify-center mb-3">
+                                <UniverLogoSvg className="cursor-pointer" onClick={() => chrome.tabs.create({ url: 'https://univer.ai' })} />
+                            </div>
                             <ul className="flex flex-col  gap-0.5">
                                 {tabs.map((tab) => (
                                     <li
@@ -268,6 +252,7 @@ export function Popup() {
                                 ))}
                             </ul>
                         </div>
+                        {sideAffix}
                         {/* <UserProfile></UserProfile> */}
                     </aside>
                     <main className="grow ml-3">
@@ -284,3 +269,5 @@ export function Popup() {
         </div>
     );
 }
+
+export const Popup = React.memo(InnerPopup);

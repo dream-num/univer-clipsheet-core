@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { ChannelConnectedMessage, ConnectChannelMessage } from './channel.message';
 import { ChannelMessageTypeEnum } from './channel.message';
-import type { PushDataSourceMessage } from './common.message';
+import type { GetDataSourceMessage, PushDataSourceMessage } from './common.message';
 import { ClipsheetMessageTypeEnum } from './common.message';
 
 export const generateRandomId = () => nanoid();
@@ -19,16 +19,7 @@ export async function getActiveTab() {
 }
 
 export async function getActiveTabId() {
-    return (await getActiveTab()).id;
-}
-
-export function openSidePanel(tabId: number, path: string = chrome.runtime.getURL('sidepanel/index.html')) {
-    chrome.sidePanel.setOptions({
-        tabId,
-        path,
-        enabled: true,
-    });
-    chrome.sidePanel.open({ tabId });
+    return (await getActiveTab())?.id;
 }
 
 export function closeSidePanel(tabId: number) {
@@ -85,3 +76,26 @@ export function promisifyMessage<T = any>(filter: (message: T) => boolean): Prom
     });
 }
 
+export function sendSetStorageMessage(key: string, payload: any) {
+    chrome.runtime.sendMessage({
+        type: ClipsheetMessageTypeEnum.SetStorage,
+        payload: {
+            key,
+            value: payload,
+        },
+    });
+}
+
+export function requestDataSource<T >(key: string, params: unknown, filter: (message: PushDataSourceMessage<T>) => boolean) {
+    const getMsg: GetDataSourceMessage<string> = {
+        type: ClipsheetMessageTypeEnum.GetDataSource,
+        payload: {
+            key,
+            params,
+        },
+    };
+    chrome.runtime.sendMessage(getMsg);
+
+    return promisifyMessage<PushDataSourceMessage<T>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === key && filter(msg))
+        .then((msg) => msg.payload.value);
+}

@@ -1,5 +1,4 @@
-import type { GetDataSourceMessage, IMessage, IMessageWithPayload, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum } from '@univer-clipsheet-core/shared';
+import type { IMessageWithPayload } from '@univer-clipsheet-core/shared';
 import type { IScraper } from '../scraper';
 
 export enum ScraperDataSourceKeyEnum {
@@ -14,7 +13,6 @@ export interface IGetScraperListParams {
 
 export enum ScraperStorageKeyEnum {
     CurrentScraper = 'current_scraper',
-    // RunningScraperIds = 'running_scraper_ids',
     ScraperList = 'scraper_list',
 }
 
@@ -41,12 +39,3 @@ export type DeleteScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.De
 
 export type RunScraperFailedMessage = IMessageWithPayload<ScraperMessageTypeEnum.RunScraperFailed, IScraper>;
 
-export const setCurrentScraper = (scraper: IScraper) => {
-    chrome.runtime.sendMessage({
-        type: ClipsheetMessageTypeEnum.SetStorage,
-        payload: {
-            key: ScraperStorageKeyEnum.CurrentScraper,
-            value: scraper,
-        },
-    });
-};

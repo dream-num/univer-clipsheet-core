@@ -2,10 +2,13 @@ import type { IMessage } from './messages';
 
 export enum UIStorageKeyEnum {
     Loading = 'loading',
-    IntelligenceColumnsLoading = 'intelligence_columns_loading',
+    ScraperFormTableLoading = 'scraper_form_table_loading',
     WorkflowDialogVisible = 'workflow_dialog_visible',
     ScraperFormReadonly = 'scraper_form_readonly',
     WorkflowPanelRect = 'workflow_panel_rect',
+    SidePanelPath = 'side_panel_path',
+    RunningWorkflowIds = 'running_workflow_ids',
+    RunningScrapingIds = 'running_scraping_ids',
 }
 
 export enum UIMessageTypeEnum {

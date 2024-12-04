@@ -1,6 +1,6 @@
 
 import { generateRandomId } from '@univer-clipsheet-core/shared';
-import { coverHelper, requestElementInspection, requestUpperElement } from '@views/client';
+import { coverHelper, requestElementInspection, requestUpperElement } from '@client/index';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 

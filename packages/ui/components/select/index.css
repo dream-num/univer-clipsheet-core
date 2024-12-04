@@ -1,11 +1,11 @@
 .rc-select-selector {
-    border-radius: 8px;
-    height: 32px;
-    width: 100%;
+    border-radius: 8px !important;
+    height: 32px !important;
+    width: 100% !important;
 }
 
 .rc-select-item {
-    cursor: pointer;
+    cursor: pointer !important;
 }
 
 .rc-select-focused .rc-select-selector {
@@ -13,52 +13,52 @@
 }
 
 .rc-select-single:not(.rc-select-customize-input) .rc-select-selector {
-    border-color: #E3E5EA;
-    padding: 6px 10px;
+    border-color: #E3E5EA !important;
+    padding: 6px 10px !important;
 }
 .rc-select-single:not(.rc-select-customize-input):hover .rc-select-selector {
-    border-color: #3b82f6;
+    border-color: #3b82f6 !important;
 }
 
 .rc-select-arrow,.rc-select-clear {
-    height: 32px;
-    line-height: 32px;
-    display: inline-flex;
-    align-items: center;
+    height: 32px !important;
+    line-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
 .rc-select-single .rc-select-selector .rc-select-selection-item, .rc-select-single .rc-select-selector .rc-select-selection-placeholder {
-    top: 6px;
-    left: 10px;
-    font-size: 14px;
+    top: 6px !important;
+    left: 10px !important;
+    font-size: 14px !important;
 }
 
 .rc-select-item-option-active {
-    border-radius: 8px;
-    background-color: #EEEFF1;
+    border-radius: 8px !important;
+    background-color: #EEEFF1 !important;
 }
 
 .rc-select-multiple .rc-select-selector .rc-select-selection-search-input {
-    background-color: transparent;
+    background-color: transparent !important;
 }
 
 .rc-select-single:not(.rc-select-customize-input) .rc-select-selector .rc-select-selection-search-input {
-    background-color: transparent;
+    background-color: transparent !important;
 }
 
 .rc-select-item-option-active {
-    border-radius: 6px;
+    border-radius: 6px !important;
 }
 
 .rc-select-allow-clear:hover .rc-select-clear {
-    opacity: 1;
+    opacity: 1 !important;
 }
 
 .rc-select-allow-clear .rc-select-clear   {
-    right: 5px;
-    top: 0;
-    z-index: 1;
-    opacity: 0;
+    right: 5px !important;
+    top: 0 !important;
+    z-index: 1 !important;
+    opacity: 0 !important;
 }
 
 

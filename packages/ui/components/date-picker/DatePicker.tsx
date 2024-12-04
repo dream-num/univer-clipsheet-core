@@ -6,7 +6,7 @@ import generateConfig from 'rc-picker/lib/generate/dayjs';
 
 import 'rc-picker/assets/index.css';
 import './index.css';
-import '../index.css';
+import '../tailwind.css';
 import clsx from 'clsx';
 
 const CalenderSvg = (props: {

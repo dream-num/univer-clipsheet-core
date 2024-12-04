@@ -5,7 +5,7 @@ export function isZhCN() {
     return chrome.i18n.getUILanguage() === 'zh-CN';
 }
 
-function createTranslator<K extends string = string>(i18mMap: Record<K, string>) {
+export function createTranslator<K extends string = string>(i18mMap: Record<K, string>) {
     return (key: K, params?: Record<string, string>) => {
         const text = i18mMap[key];
         if (params) {

@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
 import { CloseSvg } from './icons';
+import './tailwind.css';
 
 export interface ScraperTextareaProps extends Omit<React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>, 'onChange'> {
     closable?: boolean;

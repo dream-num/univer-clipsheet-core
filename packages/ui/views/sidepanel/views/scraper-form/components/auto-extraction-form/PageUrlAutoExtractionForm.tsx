@@ -1,12 +1,11 @@
 import React, { useRef } from 'react';
-import Tooltip from 'rc-tooltip';
-import 'rc-tooltip/assets/bootstrap.css';
-import type { IInputNumberProps } from '@components/InputNumber';
-import { InputNumber } from '@components/InputNumber';
+import type { IInputNumberProps } from '@components/input-number/InputNumber';
+import { InputNumber } from '@components/input-number/InputNumber';
 import { PAGE_URL_SLOT } from '@univer-clipsheet-core/scraper';
 import { t } from '@univer-clipsheet-core/locale';
 import { TipsSvg } from '@components/icons';
 import { ScraperInput } from '@components/ScraperInput';
+import { Tooltip } from '@components/tooltip';
 
 export interface IPageUrlAutoExtractionFormProps {
 

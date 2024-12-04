@@ -1,8 +1,4 @@
-// import type { IScraperColumn, ISheetCollectionRecord, IWorkflowColumn, Message } from '@chrome-extension-boilerplate/shared';
-// import { DataSourceKeys, generateRandomId, MsgType, RecordType, subscribeMessage } from '@chrome-extension-boilerplate/shared';
-// import { ColumnTypeTag, Select, TableEmpty, useDataSource } from '@chrome-extension-boilerplate/shared-client';
-// import { useWorkflowPanelContext } from '@src/context';
-// import { t } from '@src/locale';
+
 import { Select } from '@components/select';
 import { t } from '@univer-clipsheet-core/locale';
 import type { IGetScraperListParams, IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
@@ -20,18 +16,8 @@ import React, { memo, useMemo } from 'react';
 import { useImmediateDataSource } from '@lib/hooks';
 import { TableEmpty } from '@components/TableEmpty';
 import { ColumnTypeTag } from '@components/ColumnTypeTag';
+import { XLSXSvg } from '@components/icons';
 import { useWorkflowPanelContext } from '../context';
-
-// const updateWayOptions = [
-//     {
-//         label: t('InitialUpdateWayText'),
-//         value: WorkflowUpdateMode.Initial,
-//     },
-//     {
-//         label: t('IncrementalUpdateWayText'),
-//         value: WorkflowUpdateMode.Incremental,
-//     },
-// ];
 
 function toColumn(column: IScraperColumn | IWorkflowColumn): IWorkflowColumn {
     return {
@@ -86,7 +72,7 @@ const DataSourceSheetsSelect = (props: DataSourceSheetsSelectProps) => {
 
                 return (
                     <div className="flex items-center">
-                        <img className="w-5 h-5 mr-1" src={chrome.runtime.getURL('/popup/xlsx.svg')} />
+                        <XLSXSvg className="w-5 h-5 mr-1" />
                         <div>
                             <div className="text-gray-900 text-sm font-medium">{option.label}</div>
                             <div className="text-gray-400 text-xs mt-2">
@@ -102,10 +88,10 @@ const DataSourceSheetsSelect = (props: DataSourceSheetsSelectProps) => {
     );
 };
 
-async function getWorkflowColumnsByDataSource(dataSourceSheet: ITableRecord) {
-    const triggerId = dataSourceSheet.sheet.triggerId;
+async function getWorkflowColumnsByTable(tableRecord: ITableRecord) {
+    const triggerId = tableRecord.triggerId;
 
-    switch (dataSourceSheet.recordType) {
+    switch (tableRecord.recordType) {
         case TableRecordTypeEnum.ScraperSheet: {
             const msg: GetDataSourceMessage<ScraperDataSourceKeyEnum.ScraperList, IGetScraperListParams> = {
                 type: ClipsheetMessageTypeEnum.GetDataSource,
@@ -157,44 +143,48 @@ export const DataSourceForm = memo(() => {
     const {
         workflow: _workflow,
         setWorkflow,
-        originUnitId,
+        originTableId,
         hasDataSource,
     } = useWorkflowPanelContext();
 
     const workflow = _workflow!;
 
-    const unitId = workflow.unitId;
+    const tableId = workflow.tableId;
 
-    const { state: dataSourceSheets = [] } = useImmediateDataSource<ITableRecord[]>(TableDataSourceKeyEnum.TableRecords);
+    const { state: tableRecordsSource = {
+        data: [],
+        total: 0,
+    } } = useImmediateDataSource<{ data: ITableRecord[]; total: number }>(TableDataSourceKeyEnum.TableRecords);
+    const tableRecords = tableRecordsSource.data;
 
-    const dataSourceExisted = useMemo(() => {
-        if (originUnitId && dataSourceSheets.length > 0) {
-            return dataSourceSheets.some((record) => record.sheet.unitId === originUnitId);
+    const tableExisted = useMemo(() => {
+        if (originTableId && tableRecords.length > 0) {
+            return tableRecords.some((record) => record.id === originTableId);
         }
         // Assume the unit is existed
         return true;
-    }, [originUnitId, dataSourceSheets]);
+    }, [originTableId, tableRecords]);
 
-    const disabled = hasDataSource && dataSourceExisted;
+    const disabled = hasDataSource && tableExisted;
 
     const sheetOptions = useMemo(() => {
-        return dataSourceSheets.map((record) => {
+        return tableRecords.map((record) => {
             return {
-                label: record.sheet.title,
-                value: record.sheet.unitId,
+                label: record.title,
+                value: record.id,
                 recordType: record.recordType,
-                createdAt: record.sheet.createdAt,
+                createdAt: record.createdAt,
             };
         });
-    }, [dataSourceSheets]);
+    }, [tableRecords]);
 
     const columns = workflow.columns ?? [];
 
-    const handleUnitIdChange = async (unitId: string) => {
-        workflow.unitId = unitId;
-        const dataSourceSheet = dataSourceSheets.find((record) => record.sheet.unitId === unitId);
+    const handleTableIdChange = async (tableId: string) => {
+        workflow.tableId = tableId;
+        const tableRecord = tableRecords.find((record) => record.id === tableId);
 
-        if (!dataSourceSheet) {
+        if (!tableRecord) {
             setWorkflow?.({
                 ...workflow,
                 columns: [],
@@ -202,11 +192,9 @@ export const DataSourceForm = memo(() => {
             return;
         }
 
-        const newColumns = await getWorkflowColumnsByDataSource(dataSourceSheet);
+        const newColumns = await getWorkflowColumnsByTable(tableRecord);
 
-        if (newColumns) {
-            workflow.columns = newColumns;
-        }
+        workflow.columns = newColumns ?? [];
 
         setWorkflow?.({ ...workflow });
     };
@@ -215,33 +203,7 @@ export const DataSourceForm = memo(() => {
         <div>
             <section className="mb-4">
                 <div className="text-gray-900 text-sm mb-2">{t('IncrementalUpdateConfiguration')}</div>
-                {/* <div className="flex flex-col gap-3">
-                    {updateWayOptions.map((option) => {
-                        const idStr = String(option.value);
-                        return (
-                            <div className="flex items-center" key={option.value}>
-                                <input
-                                    disabled={hasDataSource}
-                                    type="radio"
-                                    className="mr-2 w-4 h-4"
-                                    id={idStr}
-                                    value={option.value}
-                                    checked={updateWay === option.value}
-                                    onChange={() => {
-                                        setUpdateWay(option.value);
 
-                                        if (option.value === WorkflowUpdateMode.Initial) {
-                                            setUnit('');
-                                            setColumns([]);
-                                        }
-                                    }}
-                                >
-                                </input>
-                                <label htmlFor={idStr} className="text-gray-500 text-sm cursor-pointer">{option.label}</label>
-                            </div>
-                        );
-                    })}
-                </div> */}
                 <div className="text-gray-600 text-sm">
                     {t('DataSourceFormSubTitle')}
                 </div>
@@ -249,51 +211,29 @@ export const DataSourceForm = memo(() => {
                     <DataSourceSheetsSelect
                         disabled={disabled}
                         notFoundContent={hasDataSource && (<span className="text-red-500">{t('DataSourceNoLongerExist')}</span>)}
-                        className="w-full"
-                        value={unitId}
+                        className="!w-full"
+                        value={tableId}
                         options={sheetOptions}
                         onClear={() => {
                             setWorkflow?.({
                                 ...workflow,
-                                unitId: '',
+                                tableId: '',
                                 columns: [],
                             });
                         }}
-                        onChange={handleUnitIdChange}
+                        onChange={handleTableIdChange}
                     />
                 </div>
             </section>
-            {/* {columns && columns.length > 0 && ( */}
             <section>
                 <div className="text-gray-900 text-sm mb-2">{t('ColumnInformation')}</div>
                 <div className="rounded border border-solid border-gray-300">
                     <div className="h-10 flex items-center bg-gray-50 border-solid border-b border-gray-300 ">
-                        {/* <div
-                                className="px-4 "
-                            >
-                                <input
-                                    disabled={hasDataSource}
-                                    className="cursor-pointer"
-                                    type="checkbox"
-                                    size={16}
-                                    id="check-all"
-                                    value="check-all"
-                                    checked={columns ? selectedColumnIds.length === columns.length : false}
-                                    onChange={(evt) => {
-                                        const checked = evt.target.checked;
-                                        if (checked) {
-                                            columns && setSelectedColumnIds(columns.map((c) => c.id));
-                                        } else {
-                                            setSelectedColumnIds([]);
-                                        }
-                                    }}
-                                >
-                                </input>
-                            </div> */}
+
                         <div className="w-[560px] border-box flex items-center px-3  text-xs text-gray-500 h-full">{t('ColumnName')}</div>
                         <div className="grow flex items-center justify-center text-xs text-gray-500 border-solid border-box px-3 border-l h-full border-gray-300">{t('Type')}</div>
                     </div>
-                    {!unitId || columns.length <= 0
+                    {!tableId || columns.length <= 0
                         ? <TableEmpty className="py-3" text="No data" />
                         : (
                             <ul className="max-h-[240px] overflow-y-auto">
@@ -305,27 +245,6 @@ export const DataSourceForm = memo(() => {
                                                 'border-b border-gray-300 border-solid': index !== columns.length - 1,
                                             })}
                                         >
-                                            {/* <div
-                                            className="px-4"
-                                        >
-                                            <input
-                                                disabled={hasDataSource}
-                                                className="cursor-pointer"
-                                                type="checkbox"
-                                                size={16}
-                                                id={column.id}
-                                                checked={selectedColumnIds.includes(column.id)}
-                                                onChange={(evt) => {
-                                                    const checked = evt.target.checked;
-                                                    if (checked) {
-                                                        setSelectedColumnIds(selectedColumnIds.concat([column.id]));
-                                                    } else {
-                                                        setSelectedColumnIds(selectedColumnIds.filter((id) => id !== column.id));
-                                                    }
-                                                }}
-                                            >
-                                            </input>
-                                        </div> */}
                                             <div className=" w-[560px] border-box flex items-center px-3  text-gray-900 text-xs h-full">
                                                 <span className="whitespace-nowrap text-ellipsis overflow-hidden">
                                                     {column.name}

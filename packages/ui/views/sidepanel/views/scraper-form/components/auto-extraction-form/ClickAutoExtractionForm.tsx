@@ -1,5 +1,5 @@
-import type { IInputNumberProps } from '@components/InputNumber';
-import { InputNumber } from '@components/InputNumber';
+import type { IInputNumberProps } from '@components/input-number/InputNumber';
+import { InputNumber } from '@components/input-number/InputNumber';
 import React from 'react';
 import { t } from '@univer-clipsheet-core/locale';
 import { ScraperInspectElementBar } from '../InspectElementBar';

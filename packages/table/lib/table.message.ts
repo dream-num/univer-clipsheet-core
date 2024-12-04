@@ -13,16 +13,15 @@ export enum TableMessageTypeEnum {
     ScrapTables = 'scrap_tables',
     ResponseScrapTables = 'response_scrap_tables',
     DeleteTableRecord = 'delete_table_record',
-    // RequestTableRecords = 'request_table_records',
-    // ScrapAllTables = 'scrap_all_tables',
 }
 
 export enum TableDataSourceKeyEnum {
     TableRecords = 'table_records',
 }
 
-export enum TableStorageKeysEnum {
-    // TableRecords = 'table_records',
+export const inProgressTableRecordId = 'IN_PROGRESS_TABLE_RECORD';
+
+export enum TableStorageKeyEnum {
     TableRecords = 'table_records',
     InProgressTableRecord = 'in_progress_table_record',
 }
@@ -31,31 +30,22 @@ export enum TableStorageKeysEnum {
 export type ScrapTablesMessage = IMessageWithPayload<TableMessageTypeEnum.ScrapTables, {
     text: string;
     sheets: IInitialSheet[];
-    record: Omit<ITableRecord, 'createdAt'>;
+    record: Omit<ITableRecord, 'createdAt' | 'value' | 'id'>;
+    triggerId?: string;
 }>;
 
 export type ResponseScrapTablesMessage = IMessageWithPayload<TableMessageTypeEnum.ResponseScrapTables, {
     success: boolean;
     id: string;
-    // link: string;
 }>;
 
 export type DeleteTableRecordMessage = IMessageWithPayload<TableMessageTypeEnum.DeleteTableRecord, string>;
-
-// export type RequestTableRecordsMessage = IMessageWithPayload<TableMessageTypeEnum.RequestTableRecords, null | {
-//     page: number;
-//     pageSize: number;
-// }>;
 
 // Util methods
 export function deleteTaskRecord(id: string) {
     const msg: DeleteTableRecordMessage = {
         type: TableMessageTypeEnum.DeleteTableRecord,
         payload: id,
-        // payload: {
-        //     id,
-        //     index,
-        // },
     };
     chrome.runtime.sendMessage(msg);
 }

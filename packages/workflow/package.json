@@ -17,6 +17,9 @@
         "test": "vitest run",
         "type-check": "tsc --noEmit"
     },
+    "peerDependencies": {
+        "@wendellhu/redi": "0.16.1"
+    },
     "dependencies": {
         "@univer-clipsheet-core/scraper": "workspace:*",
         "@univer-clipsheet-core/shared": "workspace:*",

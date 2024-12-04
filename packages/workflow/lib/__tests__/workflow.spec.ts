@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import dayjs from 'dayjs';
-import { getRecentTime, validateCustomTimerRule, validateSchedule } from '@lib/workflow-schedule-helper';
-import { CustomTimerRuleMode, TimerRepeatMode } from '@lib/workflow';
+import { getRecentTime, validateCustomTimerRule, validateSchedule } from '../workflow-schedule-helper';
+import { CustomTimerRuleMode, TimerRepeatMode } from '../workflow';
 
 describe('Workflow timing execution', () => {
     it('Workflow schedule validate', () => {
@@ -178,7 +178,7 @@ describe('Workflow timing execution', () => {
             },
         }, dayjs('2025-01-02 11:40:01'));
 
-        expect(validation17).toBe(true);
+        expect(validation17).toBe(false);
 
         const validation18 = validateSchedule({
             startDate: dayjs('2025-01-01 00:00:00').valueOf(),

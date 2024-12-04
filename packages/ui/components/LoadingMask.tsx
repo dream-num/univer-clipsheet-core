@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { LoadingSvg } from './icons';
+import './tailwind.css';
 
 export interface ILoadingMaskProps {
     className?: string;

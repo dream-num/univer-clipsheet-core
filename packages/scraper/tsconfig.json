@@ -16,6 +16,6 @@
     },
     "include": [
         "index.ts",
-        "lib", "views"
-    ]
+        "lib", "views",
+        "../ui/client/scraper-client/scraper-client-channel.service.ts", "../ui/client/scraper-client/scraper-client-channel.ts"]
 }

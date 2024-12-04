@@ -4,7 +4,7 @@ export default defineConfig({
     treeshake: true,
     format: ['cjs', 'esm'],
     dts: true,
-    external: ['chrome', 'react'],
+    external: ['@wendellhu/redi', 'chrome', 'react'],
     loader: {
         '.html': 'text',
     },

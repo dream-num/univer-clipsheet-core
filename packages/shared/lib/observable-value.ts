@@ -41,21 +41,3 @@ export class ObservableValue<T = unknown> {
         this._disposers.clear();
     }
 }
-
-// export function mergeSubscribe<T1, T2, ResultValues = [T1, T2]>(v1: ObservableValue<T1>, v2: ObservableValue<T2>): ObservableValue<ResultValues> {
-//     const results: unknown[] = [];
-
-//     const resultObservable = new ObservableValue<ResultValues>([] as unknown as ResultValues);
-
-//     const values = [v1, v2] as const;
-//     values.forEach((ob, index) => {
-//         ob.subscribe((value) => {
-//             results[index] = value;
-//             if (results.length === values.length) {
-//                 resultObservable.next(results.slice() as ResultValues);
-//             }
-//         });
-//     });
-
-//     return resultObservable;
-// }

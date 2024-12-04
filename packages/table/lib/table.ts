@@ -16,19 +16,16 @@ export enum TableRecordTypeEnum {
     WorkflowSheet = 'workflowSheet',
 }
 
-export interface ITableRecord {
+export const triggerRecordTypes = [TableRecordTypeEnum.ScraperSheet, TableRecordTypeEnum.WorkflowSheet];
+
+export interface ITableRecord<V = string> {
     id: string;
-    // status: TableRecordStatusEnum;
     recordType: TableRecordTypeEnum;
-    createdAt: number;
-    updateAt?: number;
     title: string;
     sourceUrl: string;
-    // sheet: {
-    // };
-    // sheet: {
-        // triggerId?: string;
-        // unitId: string;
-        // unitId: string;
-    // };
+    createdAt: number;
+    updateAt?: number;
+    triggerId?: string;
+    value: V;
 }
+

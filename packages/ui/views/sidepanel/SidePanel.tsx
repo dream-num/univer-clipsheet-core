@@ -1,20 +1,14 @@
 
-import React, { useMemo, useRef, useState } from 'react';
 import type { IMessageRef } from '@components/message';
 import { Message } from '@components/message';
-import type { IDrillDownConfig, IScraperColumn } from '@univer-clipsheet-core/scraper';
-
-// import { StorageKeys } from '@chrome-extension-boilerplate/shared';
+import { type IDrillDownConfig, setCurrentScraper } from '@univer-clipsheet-core/scraper';
+import { useMemo, useRef, useState } from 'react';
+import { getActiveTab } from '@univer-clipsheet-core/shared';
 import { SidePanelContext, SidePanelViewEnum } from '@views/sidepanel/context';
-import { useCurrentScraper } from '@views/sidepanel//hooks';
-// import { ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
-import { getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
-import { useStorageValue } from '@lib/hooks';
-// import { SidePanelView } from './views/SidePanelView';
-// import { SidePanelContext, SidePanelViewEnum } from './context';
 import type { ISidePanelContext } from './context';
-import { ScraperEditForm, ScraperForm } from './views/scraper-form';
 import { DrillDownColumnForm } from './views/drill-down-column-form';
+import { ScraperForm } from './views/scraper-form';
+import type { SidePanelViewService } from './side-panel-view.service';
 
 function createDrillDownConfig(parentId: string): IDrillDownConfig {
     return {
@@ -25,18 +19,6 @@ function createDrillDownConfig(parentId: string): IDrillDownConfig {
     };
 }
 
-function CompositedScraperForm(props: {
-    onColumnEdit?: (column: IScraperColumn) => void;
-}) {
-    const { onColumnEdit } = props;
-    const [scraperFormReadonly] = useStorageValue(UIStorageKeyEnum.ScraperFormReadonly, false);
-    const [scraper] = useCurrentScraper();
-
-    return 'id' in scraper
-        ? <ScraperEditForm onColumnEdit={onColumnEdit} readonly={scraperFormReadonly} data={scraper} />
-        : <ScraperForm onColumnEdit={onColumnEdit} data={scraper} />;
-}
-
 async function navigateTo(url: string) {
     const tab = await getActiveTab();
     if (tab.id) {
@@ -44,23 +26,28 @@ async function navigateTo(url: string) {
     }
 }
 
-export function SidePanel() {
+export interface ISidePanelProps {
+    service: SidePanelViewService;
+}
+
+export function SidePanel(props: ISidePanelProps) {
+    const { service } = props;
     const [view, setView] = useState(SidePanelViewEnum.ScraperForm);
 
     const [drillDownConfig, setDrillDownConfig] = useState<IDrillDownConfig | undefined>();
+    const [drillDownFormLoading, setDrillDownFormLoading] = useState(false);
     const columnUrlRef = useRef<string | undefined>(undefined);
 
     const messageRef = useRef<IMessageRef>(null);
 
     const context: ISidePanelContext = useMemo(() => {
         return {
-            // view,
-            // setView,
+            service,
             get message() {
                 return messageRef.current;
             },
         };
-    }, []);
+    }, [service]);
 
     return (
         <SidePanelContext.Provider value={context}>
@@ -69,22 +56,41 @@ export function SidePanel() {
                 {view === SidePanelViewEnum.DrillDownColumnForm
                     ? (
                         <DrillDownColumnForm
+                            loading={drillDownFormLoading}
                             config={drillDownConfig}
                             onBack={() => {
-                                if (columnUrlRef.current) {
-                                    navigateTo(columnUrlRef.current);
-                                    columnUrlRef.current = undefined;
-                                }
                                 setView(SidePanelViewEnum.ScraperForm);
-                                // navigateTo(c.url)
+                                const url = columnUrlRef.current;
+                                if (url) {
+                                    navigateTo(url);
+                                }
                             }}
-                            onConfirm={(s) => {
-                                columnUrlRef.current = undefined;
+                            onConfirm={async (_config) => {
+                                setDrillDownFormLoading(true);
+                                const config = await service.generateDrillDownConfig(_config).finally(() => {
+                                    setDrillDownFormLoading(false);
+                                });
+
+                                setView(SidePanelViewEnum.ScraperForm);
+
+                                setCurrentScraper((scraper) => {
+                                    const column = scraper.columns.find((c) => c.id === config.parentId);
+                                    if (column) {
+                                        column.drillDownConfig = { ...config, columns: config.columns.slice() };
+                                    }
+
+                                    return { ...scraper };
+                                });
+
+                                const url = columnUrlRef.current;
+                                if (url) {
+                                    navigateTo(url);
+                                }
                             }}
                         />
                     )
                     : (
-                        <CompositedScraperForm onColumnEdit={(c) => {
+                        <ScraperForm onColumnEdit={(c) => {
                             if (!c.url) {
                                 return;
                             }

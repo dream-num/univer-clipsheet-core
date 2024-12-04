@@ -1,12 +1,11 @@
 // import type { IScraper, IWorkflowSourceColumn } from '@chrome-extension-boilerplate/shared';
-import Tooltip from 'rc-tooltip';
 import React, { useState } from 'react';
 // import { CollapseIconSvg, ExpandIconSvg } from '@chrome-extension-boilerplate/shared-client';
-import 'rc-tooltip/assets/bootstrap.css';
 import './index.css';
 import type { IScraper } from '@univer-clipsheet-core/scraper';
 import type { IWorkflowSourceColumn } from '@univer-clipsheet-core/workflow';
 import { CollapseIconSvg, ExpandIconSvg } from '@components/icons';
+import { Tooltip } from '@components/tooltip';
 
 export interface IScraperColumnDropdownMenuProps {
     children: React.ReactElement;
@@ -67,5 +66,5 @@ export const ScraperColumnDropdownMenu = (props: IScraperColumnDropdownMenuProps
         </div>
     );
 
-    return <Tooltip trigger="click" placement="bottomLeft" overlayClassName="white-tooltip scraper-column-dropdown-menu-tooltip" overlay={overlay}>{children}</Tooltip>;
+    return <Tooltip white trigger="click" placement="bottomLeft" overlayClassName="scraper-column-dropdown-menu-tooltip" overlay={overlay}>{children}</Tooltip>;
 };

@@ -1,37 +1,31 @@
-import type { DeleteScraperMessage, IGetScraperListParams, IScraper, RunScraperFailedMessage, RunScraperMessage, StopScraperMessage } from '@univer-clipsheet-core/scraper';
-import { AutoExtractionMode, ScraperDataSourceKeyEnum, ScraperMessageTypeEnum, ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
-import type { Message } from '@components/message';
-import { createScraperSetting } from '@univer-clipsheet-core/workflow';
-import type {
-    SetStorageMessage } from '@univer-clipsheet-core/shared';
-import {
-    ClipsheetMessageTypeEnum,
-    // AutoExtractionMode,
-    closePopup,
-    // createScraperSetting,
-    // DataSourceKeys,
-    defaultPageSize,
-    generateRandomId,
-    getActiveTab,
-    // MsgType,
-    openSidePanel,
-    // StorageKeys,
-} from '@univer-clipsheet-core/shared';
 import type { DropdownMenuItem } from '@components/DropdownMenu';
 import { DropdownMenu } from '@components/DropdownMenu';
-// import { DropdownMenu, MoreButton, separateLineMenu, TableEmptySvg, useDataSource, useStorageValue } from '@univer-clipsheet-core/shared-client';
-import { RunButton } from '@components/buttons';
+import { MoreButton } from '@components/MoreButton';
+import { separateLineMenu } from '@components/PopupMenus';
 import { Table } from '@components/Table';
-import { usePopupContext } from '@views/popup/context';
+import { TableLoading } from '@components/TableLoading';
+import { RunButton } from '@components/buttons';
+import { TableEmptySvg } from '@components/icons';
+import { useDataSource, useImmediateDataSource } from '@lib/hooks';
 import type { Translator } from '@univer-clipsheet-core/locale';
 import { t } from '@univer-clipsheet-core/locale';
+import type { DeleteScraperMessage, IGetScraperListParams, IScraper, RunScraperFailedMessage, RunScraperMessage, StopScraperMessage } from '@univer-clipsheet-core/scraper';
+import { AutoExtractionMode, ScraperDataSourceKeyEnum, ScraperMessageTypeEnum, ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
+import type {
+    OpenSidePanelMessage,
+    SetStorageMessage,
+} from '@univer-clipsheet-core/shared';
+import {
+    ClipsheetMessageTypeEnum,
+    closePopup,
+    defaultPageSize,
+    generateRandomId,
+    getActiveTabId,
+} from '@univer-clipsheet-core/shared';
+import { createScraperSetting } from '@univer-clipsheet-core/workflow';
+import { usePopupContext } from '@views/popup/context';
 import type { TableProps } from 'rc-table';
 import { useEffect, useMemo } from 'react';
-import { TableLoading } from '@components/TableLoading';
-import { MoreButton } from '@components/MoreButton';
-import { TableEmptySvg } from '@components/icons';
-import { useDataSource, useImmediateDataSource, useStorageValue } from '@lib/hooks';
-import { separateLineMenu } from '@components/PopupMenus';
 import { openWorkflowDialog } from '../workflow-tab/helper';
 
 const ScraperGearSvg = () => {
@@ -107,7 +101,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
     const { showMessage, searchInput } = usePopupContext();
 
     const { state: runningScraperIds = [] } = useImmediateDataSource<string[]>(ScraperDataSourceKeyEnum.RunningScraperIds);
-    // const [runningScraperIds] = useStorageValue<string[]>(ScraperStorageKeyEnum.RunningScraperIds, []);
+
     const { state: innerData = [], getState: getInnerData, loading } = useDataSource<IScraper[], IGetScraperListParams>(ScraperDataSourceKeyEnum.ScraperList);
 
     useEffect(() => {
@@ -172,7 +166,6 @@ export const ScraperTable = (props: IScraperTableProps) => {
                             const msg: RunScraperMessage = {
                                 type: ScraperMessageTypeEnum.RunScraper,
                                 payload: record,
-                                // scraper: record,
                             };
                             chrome.runtime.sendMessage(msg);
                         }}
@@ -193,7 +186,6 @@ export const ScraperTable = (props: IScraperTableProps) => {
                     text: t('Edit'),
                     key: MoreMenu.Edit,
                 },
-                // user.anonymous === false &&
                 {
                     text: t('ScheduleTheWorkflow'),
                     key: MoreMenu.Schedule,
@@ -208,6 +200,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
             return (
                 <div className="text-center">
                     <DropdownMenu
+                        placement="bottomRight"
                         menus={menus}
                         onChange={async (key) => {
                             if (key === MoreMenu.Delete) {
@@ -216,11 +209,14 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                     payload: record.id,
                                 };
                                 chrome.runtime.sendMessage(msg);
-                                // setInnerData((prev) => prev.filter((item) => item.id !== record.id));
                             }
 
                             if (key === MoreMenu.Edit) {
-                                const msg: SetStorageMessage = {
+                                const tabId = await getActiveTabId();
+                                if (!tabId) {
+                                    return;
+                                }
+                                const msg1: SetStorageMessage = {
                                     type: ClipsheetMessageTypeEnum.SetStorage,
                                     payload: {
                                         key: ScraperStorageKeyEnum.CurrentScraper,
@@ -228,12 +224,13 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                     },
                                 };
 
-                                chrome.runtime.sendMessage(msg);
-                                const activeTab = await getActiveTab();
+                                const msg2: OpenSidePanelMessage = {
+                                    type: ClipsheetMessageTypeEnum.OpenSidePanel,
+                                    payload: tabId,
+                                };
 
-                                if (activeTab.id) {
-                                    openSidePanel(activeTab.id);
-                                }
+                                chrome.runtime.sendMessage(msg1);
+                                chrome.runtime.sendMessage(msg2);
 
                                 closePopup();
                             }

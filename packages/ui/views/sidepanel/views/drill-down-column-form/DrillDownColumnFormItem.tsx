@@ -1,11 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
-// import { ScraperInput, Select } from '@chrome-extension-boilerplate/shared-client';
-
-// import type { IDrillDownColumn } from '@chrome-extension-boilerplate/shared';
 import { Option } from 'rc-select';
 import clsx from 'clsx';
-// import { t } from '../../locale';
 import type { IDrillDownColumn } from '@univer-clipsheet-core/scraper';
 import { ScraperInput } from '@components/ScraperInput';
 import { t } from '@univer-clipsheet-core/locale';

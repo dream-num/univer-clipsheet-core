@@ -1,35 +1,18 @@
-import React, { useCallback, useMemo } from 'react';
-// import type { AutoExtractionFormTab } from '@chrome-extension-boilerplate/shared-client';
-import type { TableProps } from 'rc-table';
-import Table from 'rc-table';
-import './index.css';
-
-// import type { IDrillDownColumn, IDrillDownConfig, IScraperColumn } from '@chrome-extension-boilerplate/shared';
-// import { getActiveTab, MsgType, ScraperColumnType, StorageKeys } from '@chrome-extension-boilerplate/shared';
-// import type { IPopupMenu } from '@chrome-extension-boilerplate/shared-client';
-// import {
-//     CollapseIconSvg,
-//     ColumnTypeTag,
-//     DropdownMenu,
-//     ExpandIconSvg,
-//     LoadingMask,
-//     MoreButton,
-    // TableEmpty } from '@chrome-extension-boilerplate/shared-client';
-import clsx from 'clsx';
-// import { Select } from '@src/components/select';
-// import { t } from '../../locale';
-import { CollapseIconSvg, ExpandIconSvg } from '@components/icons';
-import type { IDrillDownColumn, IDrillDownConfig, IScraperColumn } from '@univer-clipsheet-core/scraper';
-import { getActiveTab } from '@univer-clipsheet-core/shared';
-import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
-import type { IPopupMenu } from '@components/PopupMenus';
 import { DropdownMenu } from '@components/DropdownMenu';
-import { MoreButton } from '@components/MoreButton';
+import { CollapseIconSvg, ExpandIconSvg } from '@components/icons';
 import { LoadingMask } from '@components/LoadingMask';
+import { MoreButton } from '@components/MoreButton';
+import type { IPopupMenu } from '@components/PopupMenus';
 import { TableEmpty } from '@components/TableEmpty';
 import { t } from '@univer-clipsheet-core/locale';
-import { SidePanelViewEnum, useSidePanelContext } from '../../context';
+import type { IDrillDownColumn, IScraperColumn } from '@univer-clipsheet-core/scraper';
+import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
+import clsx from 'clsx';
+import type { TableProps } from 'rc-table';
+import Table from 'rc-table';
+import React, { useMemo } from 'react';
 import { ColumnTypeTag } from '../../../../components/ColumnTypeTag';
+import './index.css';
 
 const DrillDownArrowSvg = () => {
     return (
@@ -101,7 +84,6 @@ export interface IScraperTableProps {
     data: UnionColumn[];
     readonly?: boolean;
     loading?: boolean;
-    // setDeletedIds?: React.Dispatch<React.SetStateAction<string[]>>;
     expandedIds: string[];
     setExpandedIds?: React.Dispatch<React.SetStateAction<string[]>>;
     onColumnDrillDownClick?: (column: IScraperColumn) => void;
@@ -120,35 +102,6 @@ export const ScraperTable = (props: IScraperTableProps) => {
         setExpandedIds,
         onColumnDrillDownClick,
         column } = props;
-    // const { setView } = useSidePanelContext();
-
-    // const handleEditDrillDownColumns = useCallback((column: IScraperColumn) => {
-        // const { url, id, drillDownConfig } = column;
-        // const newDrillDownConfig: IDrillDownConfig = {
-        //     parentId: id,
-        //     minInterval: 3,
-        //     maxInterval: 6,
-        //     columns: drillDownConfig?.columns || [],
-        //     ...drillDownConfig,
-        // };
-
-        // TODO: refactor to use context
-        // chrome.runtime.sendMessage({
-        //     type: MsgType.SetStorage,
-        //     key: StorageKeys.DrillDownConfig,
-        //     value: { ...newDrillDownConfig },
-        // });
-
-        // async function toDrillDownPage() {
-        //     const tab = await getActiveTab();
-        //     if (tab.id) {
-        //         chrome.tabs.update(tab.id, { url });
-        //         setView(SidePanelViewEnum.DrillDownColumnForm);
-        //     }
-        // }
-
-        // toDrillDownPage();
-    // }, [setView]);
 
     const columns: TableProps['columns'] = useMemo(() => {
         const nameColumnWidth = 166;
@@ -183,7 +136,6 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                         onExpandClick={handleExpand}
                                         onDrillDownClick={() => {
                                             onColumnDrillDownClick?.(record);
-                                            // handleEditDrillDownColumns(record);
                                         }}
                                         name={value}
                                     />

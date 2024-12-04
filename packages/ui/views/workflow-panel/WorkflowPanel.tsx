@@ -1,17 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-// import { injector } from '@lib/injector';
-// import { WorkflowController } from '@lib/controllers/workflow-controller';
-// import type { IMessageRef } from '@chrome-extension-boilerplate/shared-client';
-// import { Message as MessageComponent, PlusSvg, useStorageValue } from '@chrome-extension-boilerplate/shared-client';
-// import type { IWorkflow, Message } from '@chrome-extension-boilerplate/shared';
-// import { MsgType, StorageKeys, subscribeMessage, TimerRepeatMode, WorkflowFilterMode, WorkflowRuleName, WorkflowTriggerName } from '@chrome-extension-boilerplate/shared';
 import clsx from 'clsx';
-// import { t } from '@src/locale';
-// import type { IWorkflowPanelContext } from '@src/context';
-// import { WorkflowPanelContext } from '@src/context';
 import dayjs from 'dayjs';
 import type { IWorkflow } from '@univer-clipsheet-core/workflow';
-import { TimerRepeatMode, WorkflowFilterMode, WorkflowRuleName, WorkflowStorageKeyEnum, WorkflowTriggerName } from '@univer-clipsheet-core/workflow';
+import { TimerRepeatMode, WorkflowFilterMode, WorkflowMessageTypeEnum, WorkflowRuleName, WorkflowStorageKeyEnum, WorkflowTriggerName } from '@univer-clipsheet-core/workflow';
 import { type IMessageRef, Message } from '@components/message';
 import type { GetStorageMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, promisifyMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
@@ -22,6 +13,7 @@ import { Steps } from './Steps';
 import { DataFilterForm, DataMergeForm, DataSourceForm, RemoveDuplicateForm, TimerForm } from './form';
 import { linearGradientBackground } from './constants';
 import { type IWorkflowPanelContext, WorkflowPanelContext } from './context';
+import type { WorkflowPanelViewService } from './workflow-panel-view.service';
 
 const CloseGraySvg = () => {
     return (
@@ -96,7 +88,6 @@ export interface Rect {
 
 function createWorkflow(): IWorkflow {
     return {
-        // id: generateRandomId(20),
         filterMode: WorkflowFilterMode.Remove,
         scraperSettings: [],
         columns: [],
@@ -128,69 +119,62 @@ const PrimaryButton = (props: React.DetailedHTMLProps<React.ButtonHTMLAttributes
     );
 };
 
-export const WorkflowPanel = (props: {
+const setWorkflowDialogVisible = (visible: boolean) => {
+    const msg: SetStorageMessage = {
+        type: ClipsheetMessageTypeEnum.SetStorage,
+        payload: {
+            key: UIStorageKeyEnum.WorkflowDialogVisible,
+            value: visible,
+        },
+    };
+    chrome.runtime.sendMessage(msg);
+};
+
+const closeWorkflowDialog = () => {
+    setWorkflowDialogVisible(false);
+};
+
+const InnerWorkflowPanel = (props: {
     rect: Rect;
     onRectChange?: (rect: Rect) => void;
-    onConfirm?: (params: { workflow: IWorkflow; toRun?: boolean }) => void;
+    service: WorkflowPanelViewService;
 }) => {
-    const { rect, onConfirm, onRectChange } = props;
-    // const [_rect, _setRect, setStorageRect] = useStorageValue<Rect>(StorageKeys.WorkflowDialogRect, { height: 0, width: 0 });
+    const { rect, service, onRectChange } = props;
     const rectRef = useRef(rect);
     rectRef.current = rect;
 
     const messageRef = useRef<IMessageRef>(null);
     const [workflow, setWorkflow] = useState<IWorkflow>(createWorkflow());
-    const [originUnitId, setOriginUnitId] = useState('');
+    const [originTableId, setOriginTableId] = useState('');
 
     const [hasDataSource, setHasDataSource] = useState(false);
-    // const [user] = useStorageValue<Partial<AnonymousUser>>(StorageKeys.UserInfo, {});
     const contextValue: IWorkflowPanelContext = useMemo(() => {
         return {
-            // user,
-            hasDataSource,
             workflow,
-            originUnitId,
             setWorkflow,
+            service,
+            hasDataSource,
+            originTableId,
         };
-    }, [originUnitId, hasDataSource, workflow]);
+    }, [originTableId, hasDataSource, workflow, service]);
 
     useEffect(() => {
         const request: GetStorageMessage = {
             type: ClipsheetMessageTypeEnum.GetStorage,
             payload: WorkflowStorageKeyEnum.CurrentWorkflow,
-            // key: StorageKeys.UserInfo,
         };
-        // const request: Message[MsgType.RequestStorage] = {
-        //     type: MsgType.RequestStorage,
-        //     key: StorageKeys.CurrentWorkflow,
-        // };
+
         chrome.runtime.sendMessage(request);
         const responsePromise = promisifyMessage<PushStorageMessage<IWorkflow>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushStorage && msg.payload.key === WorkflowStorageKeyEnum.CurrentWorkflow);
 
         responsePromise.then(({ payload }) => {
             const { value } = payload;
             if (value) {
-                setHasDataSource(Boolean(value.id && value.unitId));
-                setOriginUnitId(value.unitId ?? '');
+                setHasDataSource(Boolean(value.id && value.tableId));
+                setOriginTableId(value.tableId ?? '');
                 setWorkflow((w) => ({ ...w, ...value }));
             }
         });
-    }, []);
-
-    const setWorkflowDialogVisible = useCallback((visible: boolean) => {
-        const msg: SetStorageMessage = {
-            type: ClipsheetMessageTypeEnum.SetStorage,
-            payload: {
-                key: UIStorageKeyEnum.WorkflowDialogVisible,
-                value: visible,
-            },
-        };
-        chrome.runtime.sendMessage(msg);
-        // chrome.runtime.sendMessage({
-        //     type: MsgType.SetStorage,
-        //     key: StorageKeys.WorkflowDialogVisible,
-        //     value: visible,
-        // });
     }, []);
 
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -231,10 +215,6 @@ export const WorkflowPanel = (props: {
             height: newRect.height,
             width: newRect.width,
         });
-        // setStorageRect({
-        //     height: newRect.height,
-        //     width: newRect.width,
-        // });
     }, [onRectChange]);
 
     useEffect(() => {
@@ -277,10 +257,6 @@ export const WorkflowPanel = (props: {
         }
     }, [item.key]);
 
-    function handleCloseDialog() {
-        setWorkflowDialogVisible(false);
-    }
-
     function getFinalWorkflow() {
         const rules = workflow?.rules.filter((rule) => {
             // Remove empty rules
@@ -292,11 +268,11 @@ export const WorkflowPanel = (props: {
         });
 
         const schedule = workflow.schedule;
-        // console.log('before workflow', schedule);
+
         if (workflow.schedule.repeatMode !== TimerRepeatMode.Custom) {
-            delete schedule.customRule;
+            delete schedule.customRule; // Do not save custom rule if not custom mode
         }
-        // console.log('after workflow', schedule);
+
         return {
             ...workflow,
             rules,
@@ -306,8 +282,9 @@ export const WorkflowPanel = (props: {
     const getConfirmButtons = () => {
         const isEdit = Boolean(workflow?.id);
 
-        const createOrSaveWorkflow = (toRun?: boolean) => {
-            if (workflow && workflow?.name.trim().length <= 0) {
+        const createOrSaveWorkflow = (toRun: boolean) => {
+            const workflowName = workflow?.name;
+            if (workflowName.trim().length <= 0) {
                 messageRef.current?.showMessage({
                     type: 'error',
                     text: t('WorkflowNameCannotBeEmpty'),
@@ -315,25 +292,25 @@ export const WorkflowPanel = (props: {
                 return;
             }
 
+            chrome.runtime.sendMessage({
+                type: isEdit
+                    ? WorkflowMessageTypeEnum.UpdateWorkflow
+                    : WorkflowMessageTypeEnum.CreateWorkflow,
+                payload: {
+                    workflow: getFinalWorkflow(),
+                    toRun,
+                },
+            });
+
             const duration = 2000;
+
             messageRef.current?.showMessage({
                 type: 'success',
                 text: isEdit ? t('SaveWorkflowSuccessfully') : t('CreateWorkflowSuccessfully'),
                 duration,
             });
 
-            onConfirm?.({
-                workflow: getFinalWorkflow(),
-                toRun,
-            });
-
-            // chrome.runtime.sendMessage({
-            //     type: isEdit ? MsgType.UpdateWorkflow : MsgType.CreateWorkflow,
-            //     workflow: getFinalWorkflow(),
-            //     toRun,
-            // });
-
-            setTimeout(handleCloseDialog, duration);
+            setTimeout(closeWorkflowDialog, duration);
         };
 
         return (
@@ -344,7 +321,7 @@ export const WorkflowPanel = (props: {
                 >
                     {isEdit ? t('SavetoRun') : t('CreateToRun')}
                 </DefaultButton>
-                <PrimaryButton onClick={() => createOrSaveWorkflow()}>
+                <PrimaryButton onClick={() => createOrSaveWorkflow(false)}>
                     {!isEdit && (
                         <span className="mr-1.5">
                             <PlusSvg />
@@ -400,7 +377,7 @@ export const WorkflowPanel = (props: {
                         <ScraperGearSvg />
                         <span className="ml-2 text-lg">{t('Workflow')}</span>
                     </div>
-                    <button onClick={handleCloseDialog}>
+                    <button onClick={closeWorkflowDialog}>
                         <CloseGraySvg />
                     </button>
                 </div>
@@ -414,3 +391,5 @@ export const WorkflowPanel = (props: {
         </WorkflowPanelContext.Provider>
     );
 };
+
+export const WorkflowPanel = React.memo(InnerWorkflowPanel);

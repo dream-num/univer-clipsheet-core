@@ -11,4 +11,5 @@ export interface ScraperTaskChannelResponse {
 }
 
 export const getScraperTaskChannelName = (id: string) => `ScraperTaskChannel-${id}`;
+export const isScraperTaskChannelName = (name: string) => name.startsWith('ScraperTaskChannel-');
 export const scraperTaskChannel = new Channel<ScraperTaskChannelRequest, ScraperTaskChannelResponse>();

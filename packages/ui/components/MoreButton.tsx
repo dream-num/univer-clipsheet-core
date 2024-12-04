@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { MoreSvg } from '@components/icons';
-import './index.css';
+import './tailwind.css';
 
 export type MoreButtonProps = Omit<React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, 'type' | 'children'>;
 

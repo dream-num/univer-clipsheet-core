@@ -1,7 +1,7 @@
 
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import './index.css';
-import '../index.css';
+import '../tailwind.css';
 import clsx from 'clsx';
 import { ErrorSingleSvg, SuccessSingleSvg } from '../icons';
 

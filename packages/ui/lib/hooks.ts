@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GetDataSourceMessage, GetStorageMessage, ObservableValue, PushDataSourceMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, debounce } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, debounce, isFunction } from '@univer-clipsheet-core/shared';
 
-export function useObservableValue<T>(observable: ObservableValue<T>) {
-    const [value, innerSetValue] = useState<T>(observable.value);
+export function useObservableValue<T>(observable: ObservableValue<T>): [T, (value: T) => void];
+export function useObservableValue<T>(observable?: ObservableValue<T>): [T | undefined, (value: T) => void];
+export function useObservableValue<T>(observable?: ObservableValue<T>): [T | undefined, (value: T) => void] {
+    const [value, innerSetValue] = useState<T | undefined>(observable
+        ? isFunction(observable.value) ? () => observable.value : observable.value
+        : undefined);
 
     useEffect(() => {
-        innerSetValue(observable.value);
+        if (!observable) {
+            return;
+        }
 
-        const unsubscribe = observable.subscribe((newValue) => innerSetValue(newValue));
+        const unsubscribe = observable.subscribe((newValue) => innerSetValue(isFunction(newValue) ? () => newValue : newValue));
 
         return () => {
             unsubscribe();
@@ -16,7 +22,7 @@ export function useObservableValue<T>(observable: ObservableValue<T>) {
     }, [observable]);
 
     const setValue = useCallback((value: T) => {
-        observable.next(value);
+        observable?.next(value);
     }, [observable]);
 
     return [value, setValue] as const;
@@ -43,9 +49,12 @@ export function useStorageValue<T = unknown>(key: string, defaultValue: T) {
             payload: key,
         };
         chrome.runtime.sendMessage(requestMessage);
-
         const listener = (message: PushStorageMessage) => {
-            if (message.type === ClipsheetMessageTypeEnum.PushStorage && message.payload.key === key) {
+            const { payload, type } = message;
+            if (type === ClipsheetMessageTypeEnum.PushStorage
+                && payload.key === key
+                && payload.value !== undefined
+            ) {
                 setValue(message.payload.value as T);
             }
         };
@@ -99,11 +108,11 @@ export function useDataSource<V = unknown, P = unknown>(key: string) {
     } as const;
 }
 
-export function useImmediateDataSource<V = unknown>(key: string) {
+export function useImmediateDataSource<V = unknown>(key: string, payloadInit?: Record<string, any>) {
     const ctx = useDataSource<V>(key);
 
     useEffect(() => {
-        ctx.getState();
+        ctx.getState(payloadInit);
     }, []);
 
     return ctx;

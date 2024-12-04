@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
-import { useDataSource, useImmediateDataSource } from '@lib/hooks';
+import { useImmediateDataSource } from '@lib/hooks';
 import type { IScraper } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, ScraperDataSourceKeyEnum } from '@univer-clipsheet-core/scraper';
 import { t } from '@univer-clipsheet-core/locale';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
-import { generateRandomId } from '@univer-clipsheet-core/shared';
+import { defaultPageSize, generateRandomId } from '@univer-clipsheet-core/shared';
 import type { IWorkflowColumn, IWorkflowScraperSetting, WorkflowRemoveDuplicateRule } from '@univer-clipsheet-core/workflow';
 import { createScraperSetting, WorkflowRuleName, WorkflowScraperSettingMode } from '@univer-clipsheet-core/workflow';
 import { CloseSvg, PlusSvg } from '@components/icons';
-import { InputNumber } from '@components/InputNumber';
+import { InputNumber } from '@components/input-number/InputNumber';
 import { ScraperInput } from '@components/ScraperInput';
 import { Select } from '@components/select';
-import { ScraperDropdownMenu } from '../components/scraper-dropdown-menu';
+import { ScraperDropdownMenu } from '../components/ScraperDropdownMenu';
 import { useWorkflowPanelContext } from '../context';
 import { ScraperColumnDropdownMenu } from '../components/scraper-column-dropdown-menu';
 import { Collapse } from './Collapse';
@@ -46,7 +46,9 @@ export const DataMergeForm = () => {
 
     const workflow = _workflow!;
 
-    const { state: scraperList = [] } = useImmediateDataSource<IScraper[]>(ScraperDataSourceKeyEnum.ScraperList);
+    const { state: scraperList = [] } = useImmediateDataSource<IScraper[]>(ScraperDataSourceKeyEnum.ScraperList, {
+        pageSize: defaultPageSize,
+    });
 
     const scraperMap = useMemo(() => {
         const map = new Map<string, IScraper>();

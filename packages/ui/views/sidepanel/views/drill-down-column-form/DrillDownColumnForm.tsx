@@ -1,20 +1,13 @@
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-// import { InputNumber, LoadingMask, useStorageValue } from '@chrome-extension-boilerplate/shared-client';
-
-// import type { IDrillDownColumn, IDrillDownConfig, IInitialSheet, ISheet_Row_Cell, ITableElementAnalyzeRowDataItem } from '@chrome-extension-boilerplate/shared';
-// import { createEmptyInitialSheet, DataSourceKeys, getActiveTab, getActiveTabId, getDataSource, MsgType, PingSignalKeys, startSendSignalInterval, StorageKeys } from '@chrome-extension-boilerplate/shared';
-// import type { ScraperData } from '@src/components/hooks';
-// import { t } from '../../locale';
-import type { IDrillDownColumn, IDrillDownConfig, IScraper } from '@univer-clipsheet-core/scraper';
-import type { IInitialSheet, ISheet_Row_Cell, ITableElementAnalyzeRowDataItem } from '@univer-clipsheet-core/table';
-import { createEmptyInitialSheet } from '@univer-clipsheet-core/table';
-import { generateRandomId, getActiveTab, getActiveTabId, listenPingSignal, pingSignal, PingSignalKeyEnum } from '@univer-clipsheet-core/shared';
-import { useStorageValue } from '@lib/hooks';
+import React, { useEffect, useRef, useState } from 'react';
+import type { IDrillDownColumn, IDrillDownConfig } from '@univer-clipsheet-core/scraper';
+import type { ITableElementAnalyzeRowDataItem } from '@univer-clipsheet-core/table';
+import { generateRandomId, getActiveTab, pingSignal, PingSignalKeyEnum } from '@univer-clipsheet-core/shared';
 import { LoadingMask } from '@components/LoadingMask';
-import { InputNumber } from '@components/InputNumber';
+import { InputNumber } from '@components/input-number/InputNumber';
 import { t } from '@univer-clipsheet-core/locale';
-import { coverHelper, requestElementInspection, requestUpperElement } from '@views/client';
+import { connectElementInspection, coverHelper, requestUpperElement } from '@client/index';
+import { NoDataSvg } from '@components/icons';
 import { DrillDownColumnFormItem } from './DrillDownColumnFormItem';
 
 const BackArrowSvg = () => {
@@ -26,51 +19,15 @@ const BackArrowSvg = () => {
 };
 
 export interface IDrillDownColumnProps {
-    loadingContent?: React.ReactNode;
+    loading?: boolean;
     config?: IDrillDownConfig;
     onBack?: () => void;
     onConfirm?: (config: IDrillDownConfig) => void;
-    // data: IScraper;
-    // onChange?: (data: IScraper) => void;
 }
 
-type RuntimeDrillDownColumn = IDrillDownColumn & {
+export type RuntimeDrillDownColumn = IDrillDownColumn & {
     cellData?: ITableElementAnalyzeRowDataItem;
 };
-
-// function finishDrillDown(url: string) {
-//     getActiveTab()
-//         .then((tab) => {
-//             if (tab.id) {
-//                 // chrome.tabs.sendMessage(tab.id, { type: MsgType.CloseDrillDownColumnElementInspection });
-//                 chrome.tabs.update(tab.id, { url });
-//             }
-//         });
-// }
-
-// const setIntelligenceColumnNames = async (columns: IDrillDownColumn[]) => {
-//     const initialSheet: IInitialSheet = createEmptyInitialSheet();
-//     initialSheet.rows.push({
-//         cells: columns.map((c) => {
-//             const cellData = (c as RuntimeDrillDownColumn).cellData;
-//             return {
-//                 type: c.type,
-//                 text: cellData?.text,
-//                 url: cellData?.href || cellData?.src,
-//             };
-//         }) as unknown as ISheet_Row_Cell[],
-//     });
-
-//     const intelligenceColumns: Array<{ name: string; index: number }> = await getDataSource(DataSourceKeys.IntelligenceColumns, {
-//         innerText: '',
-//         initialSheets: [initialSheet],
-//     });
-
-//     intelligenceColumns.forEach((column, index) => {
-//         const drillDownColumn = columns[index];
-//         drillDownColumn.name = column.name;
-//     });
-// };
 
 function createDrillDownConfig(): IDrillDownConfig {
     return {
@@ -80,19 +37,9 @@ function createDrillDownConfig(): IDrillDownConfig {
     };
 }
 
-// function createDrillDownColumn(): IDrillDownColumn {
-//     return {
-//         id: '',
-//         name: '',
-//         selector: '',
-//         type
-        // type: 'text',
-    // };
-// }
-
 export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
-    const { loadingContent, config, onBack, onConfirm } = props;
-    // const { setView } = useSidePanelContext();
+    const { loading, config, onBack, onConfirm } = props;
+
     const [drillDownConfig, setDrillDownConfig] = useState<IDrillDownConfig>(config || createDrillDownConfig());
 
     useEffect(() => {
@@ -100,19 +47,12 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
             setDrillDownConfig(config);
         }
     }, [config]);
-    // const [drillDownConfig, _setDrillDownConfig, setStorageDrillDownConfig] = useStorageValue<IDrillDownConfig>(StorageKeys.DrillDownConfig, {
-    //     columns: [],
-    //     minInterval: 0,
-    //     maxInterval: 0,
-    // });
+
     const [inspectingColumnId, setInspectingColumnId] = useState('');
     const inspectingColumnIdRef = useRef(inspectingColumnId);
-    // const [inspectingColumnId, _setinspectingColumnId, setStorageinspectingColumnId] = useStorageValue(StorageKeys.inspectingColumnId, '');
-    // const [loading, setLoading] = useState(false);
+    inspectingColumnIdRef.current = inspectingColumnId;
 
     useEffect(() => {
-        // setStorageinspectingColumnId('');
-
         let dispose: () => void;
         getActiveTab().then(async (tab) => {
             const tabId = tab.id;
@@ -120,11 +60,6 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
                 return;
             }
 
-            // requestElementInspection()
-            // if (tab.status === 'loading') {
-            //     await ensureTabComplete(tab);
-            // }
-            // chrome.tabs.sendMessage(tabId, { type: MsgType.RequestDrillDownColumnElementInspection });
             dispose = pingSignal(PingSignalKeyEnum.DrillDownColumnFormShowed, tabId);
         });
 
@@ -134,97 +69,50 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
     }, []);
 
     useEffect(() => {
-        function doElementInspection() {
-            return requestElementInspection()
-                .then((data) => {
-                    if (inspectingColumnIdRef.current) {
-                        setInspectingColumnId('');
-                        setDrillDownConfig((c) => ({
-                            ...c,
-                            columns: c.columns.map((column) => {
-                                if (column.id === inspectingColumnIdRef.current) {
-                                    column.selector = data.selector;
-                                    column.type = data.type;
-                                    column.name = data.cellData?.text || '';
-                                }
+        const dispose = connectElementInspection((data) => {
+            if (inspectingColumnIdRef.current) {
+                setInspectingColumnId('');
+                setDrillDownConfig((c) => ({
+                    ...c,
+                    columns: c.columns.map((column) => {
+                        if (column.id === inspectingColumnIdRef.current) {
+                            column.selector = data.selector;
+                            column.type = data.type;
+                            column.name = data.cellData?.text || '';
+                        }
 
-                                return column;
-                            }),
-                        }));
-                        coverHelper.updateCover(inspectingColumnIdRef.current, data.selector);
-                    } else {
-                        const newColumn = {
-                            id: generateRandomId(),
-                            name: data.cellData?.text || '',
-                            selector: data.selector,
-                            type: data.type,
-                        };
-                        setDrillDownConfig((c) => {
-                            return {
-                                ...c,
-                                columns: c.columns.concat([newColumn]),
-                            };
-                        });
-                        coverHelper.addCover(newColumn.id, data.selector);
-                    }
+                        return column;
+                    }),
+                }));
+                coverHelper.updateCover(inspectingColumnIdRef.current, data.selector);
+            } else {
+                const newColumn: RuntimeDrillDownColumn = {
+                    id: generateRandomId(),
+                    name: data.cellData?.text || '',
+                    selector: data.selector,
+                    type: data.type,
+                    // Add cellData to the new column
+                    cellData: data.cellData,
+                };
+                setDrillDownConfig((c) => {
+                    return {
+                        ...c,
+                        columns: c.columns.concat([newColumn]),
+                    };
                 });
-        }
+                coverHelper.addCover(newColumn.id, data.selector);
+            }
+        });
 
-        doElementInspection().then(doElementInspection);
+        return () => {
+            dispose();
+        };
     }, []);
-
-    // const handleBack = useCallback(() => {
-    //     finishDrillDown(scraperData.url);
-    //     setView(SidePanelViewEnum.ScraperForm);
-    // }, [setView, scraperData]);
-
-    // const saveColumns = async () => {
-    //     const newDrillDownColumns = drillDownConfig.columns.filter((c) => {
-    //         return (c as RuntimeDrillDownColumn).cellData;
-    //     });
-
-    //     if (newDrillDownColumns.length > 0) {
-    //         await setIntelligenceColumnNames(newDrillDownColumns);
-    //     }
-
-    //     newDrillDownColumns.forEach(((c) => {
-    //         delete (c as RuntimeDrillDownColumn).cellData;
-    //     }));
-
-        // onChange?.({
-        //     ...scraperData,
-        //     columns: scraperData.columns.map((c) => {
-        //         if (c.id === drillDownConfig.parentId) {
-        //             drillDownConfig.columns.map((c) => ({
-
-        //             }));
-        //             return {
-        //                 ...c,
-        //                 drillDownConfig: { ...drillDownConfig },
-        //             };
-        //         }
-        //         return c;
-        //     }),
-        // });
-    // };
-
-    // const handleSave = async () => {
-    //     if (loading) {
-    //         return;
-    //     }
-    //     setLoading(true);
-
-    //     await saveColumns().finally(() => {
-    //         setLoading(false);
-    //     });
-
-        // finishDrillDown(scraperData.url);
-    // };
 
     const content = drillDownConfig.columns.length === 0
         ? (
             <div className="flex flex-col items-center justify-center h-full">
-                <img className="w-[240px] h-[120px] mb-2" src={chrome.runtime.getURL('content/icons/no_data.svg')} alt="" />
+                <NoDataSvg className="w-[240px] h-[120px] mb-2" />
                 <div className="w-[208px] text-gray-400 text-sm text-[13px]">{t('NoDrillDownElements')}</div>
             </div>
         )
@@ -246,33 +134,20 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
                                     onChange={(key, value) => {
                                         item[key] = value;
                                         setDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.slice() });
-                                        // setStorageDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.slice() });
                                     }}
                                     onUpperClick={() => {
                                         requestUpperElement(item.selector).then((selector) => {
                                             if (selector) {
                                                 item.selector = selector;
                                                 setDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.slice() });
-                                                // coverHelper.updateCover(item.id, selector);
                                             }
                                         });
-                                        // const tabId = await getActiveTabId();
-                                        // if (!tabId) {
-                                        //     return;
-                                        // }
-                                        // chrome.tabs.sendMessage(tabId, {
-                                        //     type: MsgType.UpperDrillDownColumnElement,
-                                        //     columnId: item.id,
-                                        // });
                                     }}
                                     onInspectClick={() => {
                                         setInspectingColumnId(item.id);
-                                        // setStorageinspectingColumnId(item.id);
                                     }}
                                     onDelete={() => {
                                         setDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.filter((c) => c.id !== item.id) });
-
-                                        // setStorageDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.filter((c) => c.id !== item.id) });
                                     }}
                                 />
                             </li>
@@ -284,11 +159,9 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
 
     return (
         <div className="scraper-form relative bg-white rounded-xl px-4 h-full pb-[206px] overflow-auto ">
-            {loadingContent}
-            {/** Loading content */}
-            {/* {loading && (
+            {loading && (
                 <LoadingMask className="z-10 text-[#0B9EFB]" loadingClassName="w-10 h-10" text={<div className="mt-2">{t('IntelligenceColumnNamesGenerated')}</div>} />
-            )} */}
+            )}
             <h1 className="flex items-center text-base text-[#0E111E] py-3">
                 <button type="button" onClick={onBack}>
                     <BackArrowSvg />

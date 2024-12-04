@@ -12,6 +12,7 @@ export enum ClipsheetMessageTypeEnum {
     PushDataSource = 'push_data_source',
 }
 
+export type OpenSidePanelMessage = IMessageWithPayload<ClipsheetMessageTypeEnum.OpenSidePanel, number>;
 export type GetStorageMessage = IMessageWithPayload<ClipsheetMessageTypeEnum.GetStorage, string>;
 export type SetStorageMessage<T = unknown> = IMessageWithPayload<ClipsheetMessageTypeEnum.SetStorage, { key: string; value: T }>;
 export type PushStorageMessage<T = unknown> = IMessageWithPayload<ClipsheetMessageTypeEnum.PushStorage, { key: string; value: T }>;

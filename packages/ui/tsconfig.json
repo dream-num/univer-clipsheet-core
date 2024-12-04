@@ -12,6 +12,9 @@
             ],
             "@components/*": [
                 "components/*"
+            ],
+            "@client/*": [
+                "client/*"
             ]
         },
         "types": ["chrome"],

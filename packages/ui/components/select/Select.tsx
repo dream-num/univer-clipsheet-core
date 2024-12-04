@@ -5,7 +5,7 @@ import type { SelectProps } from 'rc-select';
 import RCSelect from 'rc-select';
 import 'rc-select/assets/index.css';
 import './index.css';
-import '../index.css';
+import '../tailwind.css';
 import { CloseSvg } from 'components/icons';
 
 const DownArrowSvg = () => {

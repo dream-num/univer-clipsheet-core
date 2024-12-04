@@ -1,13 +1,8 @@
-// import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig } from '@chrome-extension-boilerplate/shared';
-// import { AutoExtractionMode, closeSidePanel, getActiveTab, MsgType, ScraperColumnType } from '@chrome-extension-boilerplate/shared';
-// import { ScraperInput, ScraperTextarea } from '@chrome-extension-boilerplate/shared-client';
 
-// import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionForm, ScrollAutoExtractionForm } from '@src/components/auto-extraction-form';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 
 import dayjs from 'dayjs';
-// import { t } from '../../locale';
 import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
 import { t } from '@univer-clipsheet-core/locale';
@@ -27,7 +22,6 @@ export interface IScraperEditFormProps {
     readonly?: boolean;
     data: IScraper;
     onColumnEdit?: (column: IScraperColumn) => void;
-    // onDrillDownColumnEdit?: (column:) => void;
 }
 
 export const ScraperEditForm = (props: IScraperEditFormProps) => {
@@ -45,8 +39,6 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             [key]: value,
         });
     }
-
-    // const [editDrillDownColumn, setEditDrillDownColumn] = useState<IDrillDownColumn | null>(null);
 
     const [autoExtractionMode, setAutoExtractionMode] = useState(scraperData.mode);
 
@@ -346,28 +338,6 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
                 </footer>
             )}
             <EditColumnDialog ref={editColumnDialogRef} />
-            {/* {editDrillDownColumn && (
-                <DrillDownColumnDialog
-                    visible
-                    data={editDrillDownColumn}
-                    onChange={(newColumn) => {
-                        setStorageScraperData({
-                            ...scraperData,
-                            columns: scraperData.columns.map((column) => {
-                                if (column.drillDownConfig?.columns) {
-                                    const index = column.drillDownConfig.columns.findIndex((c) => c.id === newColumn.id);
-                                    column.drillDownConfig.columns[index] = newColumn;
-                                    return column;
-                                }
-                                return column;
-                            }),
-                        });
-                        setEditDrillDownColumn(null);
-                    }}
-                    onCancel={() => setEditDrillDownColumn(null)}
-                >
-                </DrillDownColumnDialog>
-            ) } */}
         </div>
     );
 };

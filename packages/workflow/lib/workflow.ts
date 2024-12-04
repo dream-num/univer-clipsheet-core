@@ -61,8 +61,6 @@ export enum WorkflowFilterColumnConditionOperator {
     LessThanOrEqual,
     NumberEqual,
     NumberNotEqual,
-    // NumberBetween,
-    // NumberNotBetween,
 }
 
 export interface IWorkflowFilterColumnCondition {
@@ -85,11 +83,8 @@ export type WorkflowFilterColumnRule = IWorkflowRule<WorkflowRuleName.FilterColu
 }>;
 
 export type WorkflowRule =
-// WorkflowIncludedColumnRule
-// | WorkflowMergeColumnRule
  WorkflowRemoveDuplicateRule
 | WorkflowFilterColumnRule;
-// | WorkflowTimerRule;
 
 export interface IWorkflowSourceColumn {
     scraperId: string;
@@ -138,9 +133,8 @@ export interface IWorkflowSchedule {
 
 export interface IWorkflow {
     id?: string;
-    // updateMode: WorkflowUpdateMode;
+    tableId?: string; // reference to a table record
     filterMode: WorkflowFilterMode;
-    unitId?: string;
     scraperSettings: IWorkflowScraperSetting[];
     columns: IWorkflowColumn[];
     rules: WorkflowRule[];
