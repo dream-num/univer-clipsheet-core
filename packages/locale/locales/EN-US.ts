@@ -259,4 +259,5 @@ export const locale: typeof zhCN = {
     Fri: 'Fri',
     Sat: 'Sat',
     WorkflowSendEmailTips: 'We will send an email to the address you used to register your Univer account after the workflow runs.',
+    Index: 'Index',
 };

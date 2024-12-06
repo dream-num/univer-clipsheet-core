@@ -1,5 +1,5 @@
 
-import { Table } from '@components/Table';
+import { Table } from '@components/table/Table';
 import type {
     ITableRecord,
 } from '@univer-clipsheet-core/table';
@@ -85,7 +85,7 @@ export const CollectDataTable = (props: ICollectDataTableProps) => {
     const localeTimeFormat = isZhCN() ? 'YYYY-MM-DD HH:mm' : 'MMMM D, YYYY h:mm A';
 
     const columns: TableProps['columns'] = [
-        { title: <span className="pl-4">Name</span>, width: 480, render: (value, record: ITableRecord<unknown>) => {
+        { title: <span className="pl-4">Name</span>, width: 480, render: (value, record: ITableRecord) => {
             const inProgress = record.id === inProgressTableRecordId;
 
             const title = record.title || record.sourceUrl;
@@ -145,5 +145,12 @@ export const CollectDataTable = (props: ICollectDataTableProps) => {
         return <DataTableEmpty onClick={onEmptyClick} />;
     }
 
-    return <Table data={taskList} columns={columns} rowKey="id" />;
+    return (
+        <Table
+            scroll={{ y: 300 }}
+            data={taskList}
+            columns={columns}
+            rowKey="id"
+        />
+    );
 };

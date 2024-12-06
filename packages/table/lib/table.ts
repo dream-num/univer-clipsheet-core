@@ -18,7 +18,7 @@ export enum TableRecordTypeEnum {
 
 export const triggerRecordTypes = [TableRecordTypeEnum.ScraperSheet, TableRecordTypeEnum.WorkflowSheet];
 
-export interface ITableRecord<V = string> {
+export interface ITableRecord {
     id: string;
     recordType: TableRecordTypeEnum;
     title: string;
@@ -26,6 +26,6 @@ export interface ITableRecord<V = string> {
     createdAt: number;
     updateAt?: number;
     triggerId?: string;
-    value: V;
+    value: string;
 }
 

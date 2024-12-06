@@ -1,27 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import clsx from 'clsx';
-import dayjs from 'dayjs';
+import { CloseGraySvg, PlusSvg } from '@components/icons';
+import { type IMessageRef, Message } from '@components/message';
+import { useSyncIframeRectEffect } from '@lib/hooks';
+import { t } from '@univer-clipsheet-core/locale';
+import type { GetStorageMessage, PushStorageMessage } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, IframeDialogKeyEnum, promisifyMessage, sendSetIframeDialogKeyMessage } from '@univer-clipsheet-core/shared';
 import type { IWorkflow } from '@univer-clipsheet-core/workflow';
 import { TimerRepeatMode, WorkflowFilterMode, WorkflowMessageTypeEnum, WorkflowRuleName, WorkflowStorageKeyEnum, WorkflowTriggerName } from '@univer-clipsheet-core/workflow';
-import { type IMessageRef, Message } from '@components/message';
-import type { GetStorageMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, promisifyMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
-import { t } from '@univer-clipsheet-core/locale';
-import { PlusSvg } from '@components/icons';
+import clsx from 'clsx';
+import dayjs from 'dayjs';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { linearGradientBackground } from '../../lib/constants';
 import type { IStepItem } from './Steps';
 import { Steps } from './Steps';
-import { DataFilterForm, DataMergeForm, DataSourceForm, RemoveDuplicateForm, TimerForm } from './form';
-import { linearGradientBackground } from './constants';
 import { type IWorkflowPanelContext, WorkflowPanelContext } from './context';
+import { DataFilterForm, DataMergeForm, DataSourceForm, RemoveDuplicateForm, TimerForm } from './form';
 import type { WorkflowPanelViewService } from './workflow-panel-view.service';
-
-const CloseGraySvg = () => {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21" fill="none">
-            <path d="M11.1761 10.2503L15.5792 5.84722C15.6587 5.77048 15.722 5.67869 15.7656 5.5772C15.8092 5.47571 15.8322 5.36655 15.8331 5.25609C15.8341 5.14564 15.8131 5.0361 15.7712 4.93386C15.7294 4.83163 15.6676 4.73875 15.5895 4.66064C15.5114 4.58254 15.4185 4.52077 15.3163 4.47894C15.2141 4.43711 15.1045 4.41606 14.9941 4.41702C14.8836 4.41798 14.7745 4.44093 14.673 4.48453C14.5715 4.52813 14.4797 4.5915 14.4029 4.67095L9.99984 9.07406L5.59673 4.67095C5.43984 4.51942 5.22971 4.43557 5.01159 4.43747C4.79348 4.43936 4.58483 4.52685 4.4306 4.68109C4.27636 4.83532 4.18887 5.04397 4.18698 5.26208C4.18508 5.4802 4.26893 5.69033 4.42047 5.84722L8.82357 10.2503L4.42047 14.6534C4.34101 14.7302 4.27764 14.822 4.23404 14.9235C4.19044 15.0249 4.1675 15.1341 4.16654 15.2446C4.16558 15.355 4.18662 15.4646 4.22845 15.5668C4.27028 15.669 4.33205 15.7619 4.41015 15.84C4.48826 15.9181 4.58114 15.9799 4.68337 16.0217C4.78561 16.0635 4.89515 16.0846 5.00561 16.0836C5.11606 16.0827 5.22522 16.0597 5.32671 16.0161C5.4282 15.9725 5.52 15.9092 5.59673 15.8297L9.99984 11.4266L14.4029 15.8297C14.5598 15.9812 14.77 16.0651 14.9881 16.0632C15.2062 16.0613 15.4148 15.9738 15.5691 15.8196C15.7233 15.6653 15.8108 15.4567 15.8127 15.2386C15.8146 15.0205 15.7307 14.8103 15.5792 14.6534L11.1761 10.2503Z" fill="#5F6574" />
-        </svg>
-    );
-};
 
 const LeftArrowSvg = () => {
     return (
@@ -98,12 +91,7 @@ function createWorkflow(): IWorkflow {
             minute: 0,
             repeatMode: TimerRepeatMode.Once,
         },
-        triggers: [
-            {
-                name: WorkflowTriggerName.EmailNotification,
-                payload: null,
-            },
-        ],
+        triggers: [],
     };
 }
 
@@ -119,29 +107,12 @@ const PrimaryButton = (props: React.DetailedHTMLProps<React.ButtonHTMLAttributes
     );
 };
 
-const setWorkflowDialogVisible = (visible: boolean) => {
-    const msg: SetStorageMessage = {
-        type: ClipsheetMessageTypeEnum.SetStorage,
-        payload: {
-            key: UIStorageKeyEnum.WorkflowDialogVisible,
-            value: visible,
-        },
-    };
-    chrome.runtime.sendMessage(msg);
-};
-
-const closeWorkflowDialog = () => {
-    setWorkflowDialogVisible(false);
-};
+const closeWorkflowDialog = () => sendSetIframeDialogKeyMessage(IframeDialogKeyEnum.None); ;
 
 const InnerWorkflowPanel = (props: {
-    rect: Rect;
-    onRectChange?: (rect: Rect) => void;
     service: WorkflowPanelViewService;
 }) => {
-    const { rect, service, onRectChange } = props;
-    const rectRef = useRef(rect);
-    rectRef.current = rect;
+    const { service } = props;
 
     const messageRef = useRef<IMessageRef>(null);
     const [workflow, setWorkflow] = useState<IWorkflow>(createWorkflow());
@@ -178,6 +149,7 @@ const InnerWorkflowPanel = (props: {
     }, []);
 
     const containerRef = React.useRef<HTMLDivElement>(null);
+    useSyncIframeRectEffect(containerRef);
 
     const stepItems: IStepItem[] = [
         {
@@ -204,35 +176,6 @@ const InnerWorkflowPanel = (props: {
 
     const [currentStep, setCurrentStep] = React.useState(0);
     const item = stepItems[currentStep];
-
-    const updateRect = useCallback((el: HTMLElement) => {
-        const newRect = el.getBoundingClientRect();
-        const { width, height } = rectRef.current;
-        if (width === newRect.width && height === newRect.height) {
-            return;
-        }
-        onRectChange?.({
-            height: newRect.height,
-            width: newRect.width,
-        });
-    }, [onRectChange]);
-
-    useEffect(() => {
-        let ob: ResizeObserver;
-        if (containerRef.current) {
-            updateRect(containerRef.current);
-            ob = new ResizeObserver(() => {
-                if (containerRef.current) {
-                    updateRect(containerRef.current);
-                }
-            });
-            ob.observe(containerRef.current);
-        }
-
-        return () => {
-            ob?.disconnect();
-        };
-    }, [containerRef.current]);
 
     const component = useMemo(() => {
         switch (item.key) {
@@ -335,7 +278,7 @@ const InnerWorkflowPanel = (props: {
     };
 
     const footer = (
-        <div className={clsx('flex mt-3', {
+        <footer className={clsx('flex mt-4', {
             'justify-between': currentStep > 0,
             'justify-end': currentStep === 0,
         })}
@@ -363,16 +306,16 @@ const InnerWorkflowPanel = (props: {
                     </PrimaryButton>
                 )}
 
-        </div>
+        </footer>
     );
 
     return (
         <WorkflowPanelContext.Provider value={contextValue}>
             <div
                 ref={containerRef}
-                className="w-[744px] rounded-2xl p-3 bg-[#EBF1FF]"
+                className="w-[744px] rounded-2xl p-5 bg-[#EBF1FF]"
             >
-                <div className="flex justify-between mb-3">
+                <div className="flex justify-between mb-4 ">
                     <div className="flex items-center">
                         <ScraperGearSvg />
                         <span className="ml-2 text-lg">{t('Workflow')}</span>
@@ -384,8 +327,8 @@ const InnerWorkflowPanel = (props: {
                 <div className="rounded-lg shadow px-4 py-3 bg-white ">
                     <Steps currentStep={currentStep} items={stepItems} />
                 </div>
-                <div className="p-4 rounded-lg shadow  bg-white mt-2">{component}</div>
-                <footer>{footer}</footer>
+                <div className="p-4 rounded-lg shadow  bg-white mt-3">{component}</div>
+                {footer}
                 <Message ref={messageRef} />
             </div>
         </WorkflowPanelContext.Provider>

@@ -1,6 +1,6 @@
 import { DrillDownService } from '@lib/drill-down-service';
 import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
-import type { GetDataSourceMessage, IMessage } from '@univer-clipsheet-core/shared';
+import type { GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel } from '@univer-clipsheet-core/shared';
 import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
@@ -18,7 +18,6 @@ function waitFor(ms: number) {
 };
 
 export class ScraperService {
-    // private _runningIdsProxy = new StorageProxy<string[]>(UIStorageKeyEnum.RunningScrapingIds);
     private _runningScraperIds$ = new ObservableValue<string[]>([]);
     private _scraperTabMap: Map<string, ScraperTab> = new Map();
     private _tabToScraperTabMap: Map<number, ScraperTab> = new Map();
@@ -28,20 +27,17 @@ export class ScraperService {
         @Inject(TableService) private _tableService: TableService,
         @Inject(DrillDownService) private _drillDownService: DrillDownService
     ) {
-        // this._runningIdsProxy.onChange((ids) => {
+        this._runningScraperIds$.subscribe((runningIds) => {
+            const msg: PushDataSourceMessage = {
+                type: ClipsheetMessageTypeEnum.PushDataSource,
+                payload: {
+                    key: ScraperDataSourceKeyEnum.RunningScraperIds,
+                    value: runningIds,
+                },
+            };
 
-        // })
-        // this._runningScraperIds$.subscribe((runningIds) => {
-        //     const msg: PushDataSourceMessage = {
-        //         type: ClipsheetMessageTypeEnum.PushDataSource,
-        //         payload: {
-        //             key: ScraperDataSourceKeyEnum.RunningScraperIds,
-        //             value: runningIds,
-        //         },
-        //     };
-
-        //     chrome.runtime.sendMessage(msg);
-        // });
+            chrome.runtime.sendMessage(msg);
+        });
     }
 
     async queryScrapersByIds(ids: string[]) {
@@ -59,6 +55,7 @@ export class ScraperService {
         const { scraper, windowId, onCreated } = runScraperInit;
         const { _scraperTabMap, _tabToScraperTabMap } = this;
         if (!_scraperTabMap.has(scraper.id)) {
+            // Create a scraper tab
             const newScraperTab = new ScraperTab(scraper, windowId);
             onCreated?.(newScraperTab);
 
@@ -68,6 +65,7 @@ export class ScraperService {
                 newScraperTab.dispose();
             });
 
+            // When tab is created, add it to the map
             newScraperTab.tabPromise.then((tab) => {
                 const tabId = tab.id;
                 if (tabId) {
@@ -123,8 +121,10 @@ export class ScraperService {
         let drillDownTabs: chrome.tabs.Tab[] = [];
 
         const executeDrillDown = async () => {
+            // Map of column index to drill down config
             const drillDownConfigMap = new Map<number, IDrillDownConfig>();
 
+            // Find columns that have drill down config
             scraper.columns.forEach((column, columnIndex) => {
                 const drillDownConfig = column.drillDownConfig;
                 if (column.type === Sheet_Cell_Type_Enum.URL && drillDownConfig && drillDownConfig.columns.length > 0) {
@@ -133,10 +133,11 @@ export class ScraperService {
             });
 
             const drillDownConfigMapEntries = Array.from(drillDownConfigMap.entries());
-
+            // Open tabs for each drill down config
             drillDownTabs = await Promise.all(drillDownConfigMapEntries.map(() => chrome.tabs.create({ active: false })));
 
             try {
+                // Execute drill down row by row
                 for (const row of rows) {
                     const drillDownTasks = drillDownConfigMapEntries.map(async ([columnIndex, drillDownConfig], index) => {
                         const cell = row.cells[columnIndex];
@@ -147,10 +148,14 @@ export class ScraperService {
                         const interval = calculateRandomInterval(drillDownConfig.maxInterval, drillDownConfig.minInterval);
 
                         const beforeWait = Date.now();
+                        // Use tab that created in advance
                         const tab = drillDownTabs[index];
+
                         const res = await this._drillDownService.runDrillDown(cell.url, drillDownConfig.columns.map((c) => c.selector), tab);
+
                         const waitInterval = interval - (Date.now() - beforeWait);
                         if (waitInterval > 0) {
+                            // Wait for a random interval
                             await waitFor(waitInterval);
                         }
 
@@ -168,6 +173,7 @@ export class ScraperService {
                         const { columnIndex, items } = response;
 
                         const cells = items.map((item, index) => {
+                            // Generate cell by drill down response
                             const drillDownColumn = scraper.columns[columnIndex].drillDownConfig?.columns[index];
                             const drillDownColumnType = drillDownColumn?.type;
                             const { value: itemValue } = item;
@@ -181,8 +187,10 @@ export class ScraperService {
                             return cell;
                         });
 
+                        // Insert drill down result to cells[columnIndex]
                         (row.cells[columnIndex] as unknown as ISheet_Row_Cell[]) = [row.cells[columnIndex]].concat(cells);
                     });
+                    // Flatten the cells that contains drill down result
                     row.cells = row.cells.flat();
                 }
             } finally {
@@ -226,6 +234,7 @@ export class ScraperService {
             onCreated: (scraperTab) => {
                 const disposers = new Set<() => void>();
                 scraperTab.addResponseInterceptor(async (scraperTab, rows) => {
+                    // Tp execute drill down task
                     const task = this._createDrillDownTask(scraperTab.scraper, rows);
                     disposers.add(task.dispose);
                     await task.response;
@@ -286,7 +295,7 @@ export class ScraperService {
     listenMessage() {
         chrome.webNavigation.onErrorOccurred.addListener((details) => {
             const scraperTab = this._tabToScraperTabMap.get(details.tabId);
-
+            // Failed to open the target page for the scraper
             if (scraperTab && details.frameId === 0) {
                 scraperTab.reject({
                     code: ScraperErrorCode.InvalidURL,
@@ -304,12 +313,14 @@ export class ScraperService {
             | CreateScraperMessage
             | UpdateScraperMessage, sender) => {
             switch (msg.type) {
+                // When page loaded and if it is created by scraper tab will start to scrape
                 case ClipsheetMessageTypeEnum.Loaded: {
                     const senderTabId = sender.tab?.id;
                     if (!senderTabId) {
                         return;
                     }
                     const scraperTab = this._tabToScraperTabMap.get(senderTabId);
+                    // This tab is created by scraper
                     if (scraperTab) {
                         const scraperId = scraperTab.scraper.id;
 
@@ -321,8 +332,11 @@ export class ScraperService {
 
                         const channelName = getScraperTaskChannelName(scraperId);
 
+                        // Connect channel with tab content script
                         scraperTaskChannel.getConnectedPort(channelName).then((port) => {
+                            // Send request to tab content script
                             scraperTab.onRequest();
+
                             scraperTaskChannel.sendRequest(port, { scraper });
                             scraperTaskChannel.onResponse(port, (res) => {
                                 if (res.done) {

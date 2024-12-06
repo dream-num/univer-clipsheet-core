@@ -181,31 +181,11 @@ export class ScraperClientChannel implements IClientChannel {
             });
         };
 
-        function createResponseHandler(scraper: IScraper) {
-            return (res: ScraperTaskChannelResponse) => {
-                const columnIndexMap = scraper.columns.reduce((map, c) => {
-                    map.set(c.index, c);
-                    return map;
-                }, new Map<number, IScraperColumn>());
-
-                // Only selected columns will be returned
-                res.rows.forEach((row) => {
-                    row.cells = row.cells.filter((_, index) => columnIndexMap.has(index));
-
-                    row.cells.forEach((cell, cellIndex) => {
-                        const column = columnIndexMap.get(cellIndex);
-                        if (column) {
-                            cell.type = column.type as unknown as Sheet_Cell_Type_Enum;
-                        }
-                    });
-                });
-                scraperTaskChannel.sendResponse(port, res);
-            };
-        }
+        const handleResponse = (res: ScraperTaskChannelResponse) => scraperTaskChannel.sendResponse(port, res);
 
         scraperTaskChannel.onRequest(port, (msg) => {
             const { scraper } = msg;
-            const handleResponse = createResponseHandler(scraper);
+
             switch (scraper.mode) {
                 case AutoExtractionMode.Click: {
                     this._clickExtract(scraper, handleResponse, handleFail);

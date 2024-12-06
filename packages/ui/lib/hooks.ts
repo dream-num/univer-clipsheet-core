@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GetDataSourceMessage, GetStorageMessage, ObservableValue, PushDataSourceMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, debounce, isFunction } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, debounce, isFunction, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { Rect } from '@views/workflow-panel';
 
 export function useObservableValue<T>(observable: ObservableValue<T>): [T, (value: T) => void];
 export function useObservableValue<T>(observable?: ObservableValue<T>): [T | undefined, (value: T) => void];
@@ -161,4 +162,47 @@ export function useThrottle<T>(value: T, ms: number = 200) {
     }, []);
 
     return state;
+}
+
+export function useRectResizeEffect(ref: React.RefObject<HTMLElement>, callback: (rect: DOMRect) => void) {
+    const callbackRef = useRef(callback);
+    callbackRef.current = callback;
+
+    useEffect(() => {
+        let resizeObserver: ResizeObserver;
+
+        if (ref.current) {
+            callbackRef.current(ref.current.getBoundingClientRect());
+            resizeObserver = new ResizeObserver(() => {
+                if (ref.current) {
+                    callbackRef.current(ref.current.getBoundingClientRect());
+                }
+            });
+            resizeObserver.observe(ref.current);
+        }
+
+        return () => {
+            resizeObserver?.disconnect();
+        };
+    }, [ref.current]);
+}
+
+export function useSyncIframeRectEffect(ref: React.RefObject<HTMLElement>) {
+    const [rect, setRect] = useStorageValue(UIStorageKeyEnum.IframePanelRect, {
+        width: 0,
+        height: 0,
+    });
+
+    const rectRef = useRef(rect);
+    rectRef.current = rect;
+
+    useRectResizeEffect(ref, (newRect) => {
+        const { width: oldWidth, height: oldHeight } = rectRef.current;
+        const { width: newWidth, height: newHeight } = newRect;
+        if (oldWidth === newWidth && oldHeight === newHeight) {
+            return;
+        }
+
+        setRect(newRect);
+    });
 }

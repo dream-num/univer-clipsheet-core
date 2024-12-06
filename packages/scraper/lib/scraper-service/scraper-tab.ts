@@ -1,6 +1,7 @@
-import type { IPageUrlAutoExtractionConfig, IScraper, ScraperErrorCode } from '@lib/scraper';
+import type { IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, ScraperErrorCode } from '@lib/scraper';
 import { AutoExtractionMode, PAGE_URL_SLOT } from '@lib/scraper';
 import { ObservableValue } from '@univer-clipsheet-core/shared';
+import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import type { ScraperTaskChannelResponse } from './scraper-channel';
 
 export interface ScraperTabResponseError {
@@ -26,6 +27,29 @@ function mergeResponse(res1: ScraperTabResponse, res2: ScraperTabResponse): Scra
     };
 }
 
+const columnFilterInterceptor: ResponseInterceptor = async (scraperTab, rows) => {
+    const { scraper } = scraperTab;
+    // console.log('columnFilterInterceptor', scraper.columns);
+    const columnIndexMap = scraper.columns.reduce((map, c) => {
+        map.set(c.index, c);
+        return map;
+    }, new Map<number, IScraperColumn>());
+
+    // Only selected columns will be returned
+    rows.forEach((row) => {
+        row.cells = row.cells.filter((_, index) => columnIndexMap.has(index));
+
+        row.cells.forEach((cell, cellIndex) => {
+            const column = columnIndexMap.get(cellIndex);
+            if (column) {
+                cell.type = column.type as unknown as Sheet_Cell_Type_Enum;
+            }
+        });
+    });
+
+    return rows;
+};
+
 export class ScraperTab {
     private _dispose$ = new ObservableValue<boolean>(false);
     private _onError$ = new ObservableValue<ScraperTabResponseError | undefined>(undefined);
@@ -45,17 +69,19 @@ export class ScraperTab {
 
     constructor(private _scraper: IScraper, windowId?: number) {
         this._initResponseCallbacks();
+        this.addResponseInterceptor(columnFilterInterceptor);
 
         if (_scraper.mode === AutoExtractionMode.PageUrl) {
             this._currentPage$.next((_scraper.config as IPageUrlAutoExtractionConfig).startPage);
         }
-
+        // Notify the response through a promise
         this._promise = new Promise<ScraperTabResponse>((_resolve) => {
             let resolved = false;
             this._resolve = async (res: ScraperTabResponse) => {
                 if (resolved) {
                     return;
                 }
+                // console.log('ScraperTab resolve', res);
                 resolved = true;
 
                 if (res.error) {
@@ -100,6 +126,7 @@ export class ScraperTab {
 
     private _initResponseCallbacks() {
         const { _responseCallbacks } = this;
+        // Callback for merge response
         const responseCallback = (scraper: IScraper, res: ScraperTabResponse) => {
             this._response = mergeResponse(this._response, res);
 
@@ -171,8 +198,7 @@ export class ScraperTab {
     }
 
     onError(callback: (error: ScraperTabResponseError) => void) {
-        // @ts-ignore
-        this._onError$.subscribe(callback);
+        this._onError$.subscribe((err) => err && callback(err));
     }
 
     onPageChange(callback: (page: number) => void) {

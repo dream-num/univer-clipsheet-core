@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React from 'react';
-import { linearGradientBackground } from './constants';
+import { linearGradientBackground } from '../../lib/constants';
 
 export interface IStepItem {
     text: string;

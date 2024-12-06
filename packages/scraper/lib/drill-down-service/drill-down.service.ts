@@ -69,7 +69,7 @@ export class DrillDownService {
                 }
 
                 const channelName = getDrillDownTaskChannelName(String(tabId));
-
+                // Send request to the drill down task channel
                 drillDownTaskChannel.getConnectedPort(channelName).then((port) => {
                     drillDownTaskChannel.sendRequest(port, {
                         selectors: drillDownContext.selectors,

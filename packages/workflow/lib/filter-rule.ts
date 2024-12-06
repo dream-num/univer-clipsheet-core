@@ -23,6 +23,7 @@ function isNumberLessThan(a: string, b: string) {
 
 export type Validator = (base: string, comparison: string) => boolean;
 
+// Support for multiple operators to validate cell text
 export class FilterRuleValidator {
     private _operatorValidators: Map<WorkflowFilterColumnConditionOperator, Validator> = new Map();
 

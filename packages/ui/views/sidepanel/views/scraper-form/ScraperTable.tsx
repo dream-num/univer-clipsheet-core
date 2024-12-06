@@ -8,11 +8,12 @@ import { t } from '@univer-clipsheet-core/locale';
 import type { IDrillDownColumn, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import clsx from 'clsx';
-import type { TableProps } from 'rc-table';
-import Table from 'rc-table';
+
 import React, { useMemo } from 'react';
-import { ColumnTypeTag } from '../../../../components/ColumnTypeTag';
+import { ColumnTypeTag } from '@components/ColumnTypeTag';
 import './index.css';
+import type { TableProps } from '@components/table';
+import { Table } from '@components/table';
 
 const DrillDownArrowSvg = () => {
     return (
@@ -146,7 +147,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                 },
             },
             {
-                title: <div className="text-center py-2 text-[#5F6574] text-xs font-medium">{t('Type')}</div>,
+                title: <div className="text-center text-[#5F6574] text-xs font-medium">{t('Type')}</div>,
                 dataIndex: 'type',
                 key: 'type',
                 width: 91,
@@ -161,7 +162,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                 },
             },
             !readonly && {
-                title: <div className="text-center py-2 text-[#5F6574] text-xs font-medium">{t('More')}</div>,
+                title: <div className="text-center  text-[#5F6574] text-xs font-medium">{t('More')}</div>,
                 width: 54,
                 key: 'more',
                 render: (value: any, record: IScraperColumn, index: number) => {

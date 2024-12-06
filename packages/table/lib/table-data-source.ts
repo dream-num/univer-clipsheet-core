@@ -1,4 +1,4 @@
-import { getStorage, setStorage } from '@univer-clipsheet-core/shared';
+import { getStorage, removeStorage, setStorage } from '@univer-clipsheet-core/shared';
 import { createIdentifier } from '@wendellhu/redi';
 import type { IInitialSheet } from './parser';
 import type { ITableRecord } from './table';
@@ -13,34 +13,38 @@ export interface AddTablePayload extends ScraperTableMessagePayload {
 export interface ITableDataSource<T = unknown> {
     add(table: AddTablePayload): Promise<string>;
     delete(taskId: string): Promise<void>;
-    getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord<T>[]; total: number }>;
+    getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord[]; total: number }>;
 }
 
 export const ITableDataSource = createIdentifier<ITableDataSource>('table-data-source');
 
-export const getStorageTableRecords = async () => (await getStorage<ITableRecord<IInitialSheet[]>[]>(TableStorageKeyEnum.TableRecords)) ?? [];
+export const getStorageTableRecords = async () => (await getStorage<ITableRecord[]>(TableStorageKeyEnum.TableRecords)) ?? [];
 
 export class LocalTableDataSource implements ITableDataSource {
     async add(payload: AddTablePayload) {
         const list = await getStorageTableRecords();
 
-        const record: ITableRecord<IInitialSheet[]> = {
+        const record: ITableRecord = {
             ...payload.record,
             createdAt: Date.now(),
-            value: payload.sheets,
+            value: '',
+            // value: payload.sheets,
         };
+
+        await setStorage(TableStorageKeyEnum.TableSheetsPrefix + record.id, payload.sheets);
         await setStorage(TableStorageKeyEnum.TableRecords, [record].concat(list));
 
         return record.id;
     }
 
-    async delete(taskId?: string): Promise<void> {
+    async delete(id?: string): Promise<void> {
+        removeStorage(TableStorageKeyEnum.TableSheetsPrefix + id);
         const list = await getStorageTableRecords();
 
-        await setStorage(TableStorageKeyEnum.TableRecords, list.filter((table) => table.id !== taskId));
+        await setStorage(TableStorageKeyEnum.TableRecords, list.filter((table) => table.id !== id));
     }
 
-    async getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord<IInitialSheet[]>[]; total: number }> {
+    async getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord[]; total: number }> {
         const list = await getStorageTableRecords();
 
         return {

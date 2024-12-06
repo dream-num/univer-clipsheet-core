@@ -50,6 +50,7 @@ export class TableService {
         if (_params) {
             this._latestParams = _params;
         }
+        // console.log('TableService:pushTableRecords', await this._tableDataSource.getList(this._latestParams));
 
         return pushDataSource(TableDataSourceKeyEnum.TableRecords, await this._tableDataSource.getList(this._latestParams));
     }

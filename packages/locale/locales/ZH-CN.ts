@@ -257,4 +257,5 @@ export const locale = {
     Fri: '星期五',
     Sat: '星期六',
     WorkflowSendEmailTips: '工作流运行后，我们将向您注册 Univer 账户时使用的电子邮件地址发送电子邮件。',
+    Index: '索引',
 };

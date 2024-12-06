@@ -57,3 +57,11 @@ export function resolveTypeByElement(element: HTMLElement) {
 
     return Sheet_Cell_Type_Enum.TEXT;
 }
+
+export function getCellValue(cell: IInitialSheet['rows'][number]['cells'][number]) {
+    if (cell.type === Sheet_Cell_Type_Enum.URL) {
+        return cell.url;
+    }
+
+    return cell.text;
+}

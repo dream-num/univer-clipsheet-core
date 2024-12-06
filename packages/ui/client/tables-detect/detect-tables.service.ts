@@ -4,7 +4,7 @@ import { generateRandomId, ObservableValue } from '@univer-clipsheet-core/shared
 import { findApproximationTables, getEspecialConfig, getTableExtractionParamRows, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import { TableScrapingShadowComponent, ViewState } from '@client/table-scraping';
-import { WorkflowPanelShadowComponent } from '@client/workflow-panel-shadow-component';
+import { IframePanelShadowComponent } from '@client/iframe-panel-shadow-component';
 import { RemountObserver } from '../remount-observer';
 import { CoverService } from '../cover';
 import { TableElementExtractor, TableLikeElementExtractor } from '../table-scraping/extractors';
@@ -23,7 +23,7 @@ export class DetectTablesService {
         @Inject(RemountObserver) private _remountObserver: RemountObserver,
         @Inject(CoverService) private _coverService: CoverService,
         @Inject(TableScrapingShadowComponent) private _tableScrapingShadowComponent: TableScrapingShadowComponent,
-        @Inject(WorkflowPanelShadowComponent) private _workflowPanelShadowComponent: WorkflowPanelShadowComponent
+        @Inject(IframePanelShadowComponent) private _iframePanelShadowComponent: IframePanelShadowComponent
     ) {
         this.highlightElement$.subscribe((el) => {
             _coverService.removeCover(this._coverId);
@@ -61,7 +61,7 @@ export class DetectTablesService {
     }
 
     get enableHighlight() {
-        return !this._tableScrapingShadowComponent.active && !this._workflowPanelShadowComponent.active;
+        return !this._tableScrapingShadowComponent.active && !this._iframePanelShadowComponent.active;
     }
 
     getId(element: HTMLElement) {

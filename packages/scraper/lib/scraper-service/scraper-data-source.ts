@@ -18,7 +18,12 @@ const getStorageScraperList = async () => (await getStorage<IScraper[]>(ScraperS
 
 export class LocaleScraperDataSource implements IScraperDataSource {
     async getList(params: IGetScraperListParams): Promise<IScraper[]> {
-        return getStorageScraperList();
+        const list = await getStorageScraperList();
+        const { filterRecordIds } = params;
+        if (filterRecordIds) {
+            return list.filter((s) => filterRecordIds.includes(s.id));
+        }
+        return list;
     }
 
     async add(scraper: IScraper): Promise<IScraper> {

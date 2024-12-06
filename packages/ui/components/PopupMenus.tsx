@@ -41,7 +41,7 @@ export const PopupMenus: FC<PopupMenusProps> = (props) => {
                             onMouseEnter={menu.disabled ? undefined : () => onMenuHover?.(menu, index)}
                             onClick={(evt) => {
                                 evt.stopPropagation();
-                                if (menu.disabled) {
+                                if (!menu.disabled) {
                                     onMenuClick?.(menu, index);
                                 }
                             }}

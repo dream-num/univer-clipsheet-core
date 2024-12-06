@@ -2,7 +2,7 @@ import type { DropdownMenuItem } from '@components/DropdownMenu';
 import { DropdownMenu } from '@components/DropdownMenu';
 import { MoreButton } from '@components/MoreButton';
 import { separateLineMenu } from '@components/PopupMenus';
-import { Table } from '@components/Table';
+import { Table } from '@components/table/Table';
 import { TableLoading } from '@components/TableLoading';
 import { RunButton } from '@components/buttons';
 import { TableEmptySvg } from '@components/icons';
@@ -268,5 +268,5 @@ export const ScraperTable = (props: IScraperTableProps) => {
         return <ScraperTableEmpty t={t} onClick={onEmptyClick} />;
     }
 
-    return <Table data={data} rowKey="id" columns={columns} />;
+    return <Table scroll={{ y: 300 }} data={data} rowKey="id" columns={columns} />;
 };

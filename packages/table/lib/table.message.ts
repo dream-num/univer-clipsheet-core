@@ -3,6 +3,8 @@ import type { IMessageWithPayload } from '@univer-clipsheet-core/shared';
 import type { IInitialSheet } from './parser';
 import type { ITableRecord, TableRecordTypeEnum } from './table';
 
+export const inProgressTableRecordId = 'IN_PROGRESS_TABLE_RECORD';
+
 export interface IGetTableRecordsParams {
     page: number;
     pageSize: number;
@@ -19,11 +21,11 @@ export enum TableDataSourceKeyEnum {
     TableRecords = 'table_records',
 }
 
-export const inProgressTableRecordId = 'IN_PROGRESS_TABLE_RECORD';
-
 export enum TableStorageKeyEnum {
     TableRecords = 'table_records',
     InProgressTableRecord = 'in_progress_table_record',
+    CurrentTableRecord = 'current_table_record',
+    TableSheetsPrefix = 'table_sheets_',
 }
 
 // Table Messages

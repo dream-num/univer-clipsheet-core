@@ -1,0 +1,25 @@
+.clipsheet-table .rc-table-body {
+  scrollbar-width: thin;
+  scrollbar-color: #eaeaea transparent;
+  scrollbar-gutter: stable;
+}
+.clipsheet-table .rc-table-body,
+.clipsheet-table .rc-table-content,
+.clipsheet-table .rc-table-header {
+  border-color: transparent;
+  border-width: 0;
+}
+
+.clipsheet-table.rc-table thead th {
+  background-color: transparent;
+}
+.clipsheet-table .rc-table-cell.rc-table-cell-row-hover {
+  background-color: rgba(46, 106, 248, 0.06);
+}
+
+.clipsheet-table.rc-table th,
+.clipsheet-table.rc-table td {
+  padding: 0;
+  border-color: transparent;
+  border-width: 0;
+}

@@ -44,42 +44,49 @@ export interface IWorkflowDoneContext {
 }
 
 export class WorkflowService {
+    /**
+     * The Path of workflow window page
+     */
     private _workflowWindowPath: string = '';
+    /**
+     * The validator assists the workflow in checking cell text against the filter rule
+     */
     filterRuleValidator = new FilterRuleValidator();
     workflowWindow: chrome.windows.Window | undefined = undefined;
-    // private _runningIdsProxy = new StorageProxy<string[]>(UIStorageKeyEnum.RunningWorkflowIds);
     private _runningWorkflowIds$ = new ObservableValue<string[]>([]);
     private _scheduleTimer: number | undefined = undefined;
 
+    /**
+     * Callbacks when workflow done
+     */
     private _onWorkflowDoneCallbacks = new Set<(ctx: IWorkflowDoneContext) => unknown>();
-    private _onSendEmail$ = new ObservableValue<IWorkflowDoneContext | null>(null);
+    /**
+     * Map of scraper id to workflow ids
+     * Because a scraper can be used by multiple workflows
+     */
+    private _scraperDependencyListMap = new Map<string, Set<string>>();
 
-    private _workflowScraperReferenceMap = new Map<string, Set<string>>();
+    private _workflowTriggerListeners = new Map<WorkflowTriggerName, Set<(workflow: IWorkflow, context: IWorkflowDoneContext) => void>>();
 
     constructor(
         @Inject(IWorkflowDataSource) private _dataSource: IWorkflowDataSource,
-        @Inject(ScraperService) private _scraperService: ScraperService,
-        @Inject(TableService) private _tableService: TableService
+        @Inject(ScraperService) private _scraperService: ScraperService
+        // @Inject(TableService) private _tableService: TableService
     ) {
         this._initWorkflowSchedule();
         this._initWorkflowTriggers();
 
-        // this._runningIdsProxy.onChange((runningIds) => {
-        //     if (runningIds.length <= 0) {
-        //         this._closeWorkflowWindow();
-        //     }
-        //     // console.log('runningIds', runningIds);
-        //     // pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, runningIds);
-        // });
         this._runningWorkflowIds$.subscribe((runningIds) => {
             if (runningIds.length <= 0) {
                 this._closeWorkflowWindow();
             }
-            // console.log('runningIds', runningIds);
             pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, runningIds);
         });
     }
 
+    /**
+     * Set the timeout interval to check if workflows should run as scheduled.
+     */
     private _initWorkflowSchedule() {
         const runWorkflows = async () => {
             const scheduleComparison = dayjs();
@@ -141,12 +148,16 @@ export class WorkflowService {
     }
 
     private _initWorkflowTriggers() {
+        // Emit notification of trigger when workflow done
         this.onWorkflowDone((ctx) => {
             const { workflow } = ctx;
             const emailTrigger = workflow.triggers?.find((trigger) => trigger.name === WorkflowTriggerName.EmailNotification);
 
             if (emailTrigger && workflow.tableId) {
-                this._onSendEmail$.next(ctx);
+                const listeners = this._workflowTriggerListeners.get(WorkflowTriggerName.EmailNotification);
+                if (listeners) {
+                    listeners.forEach((listener) => listener(workflow, ctx));
+                }
             }
         });
     }
@@ -169,14 +180,20 @@ export class WorkflowService {
         this._workflowWindowPath = path;
     }
 
-    private _ensureScraperReferences(scraperId: string) {
-        if (!this._workflowScraperReferenceMap.has(scraperId)) {
-            this._workflowScraperReferenceMap.set(scraperId, new Set());
+    /**
+     * Create dependency list for scraper if not exist
+     * @param scraperId
+     * @returns
+     */
+    private _ensureScraperDependencyList(scraperId: string) {
+        if (!this._scraperDependencyListMap.has(scraperId)) {
+            this._scraperDependencyListMap.set(scraperId, new Set());
         }
 
-        return this._workflowScraperReferenceMap.get(scraperId)!;
+        return this._scraperDependencyListMap.get(scraperId)!;
     }
 
+    // Apply filter rule to filter the row that does not meet the condition
     private _applyFilterRule(data: IInitialSheet['rows'], workflow: IWorkflow) {
         const filterRule = workflow.rules.find((rule) => rule.name === WorkflowRuleName.FilterColumn) as WorkflowFilterColumnRule;
 
@@ -216,7 +233,7 @@ export class WorkflowService {
 
     private _clearWorkflow(workflowId: string) {
         const shouldDeleteScraperIds = new Set<string>();
-        this._workflowScraperReferenceMap.forEach((references, scraperId) => {
+        this._scraperDependencyListMap.forEach((references, scraperId) => {
             if (references.has(workflowId)) {
                 references.delete(workflowId);
             }
@@ -228,16 +245,20 @@ export class WorkflowService {
 
         shouldDeleteScraperIds.forEach((scraperId) => {
             this._scraperService.stopScraper(scraperId);
-            this._workflowScraperReferenceMap.delete(scraperId);
+            this._scraperDependencyListMap.delete(scraperId);
         });
     }
 
+    /**
+     * Run workflow
+     * @param workflow
+     * @returns
+     */
     async runWorkflow(workflow: IWorkflow) {
         const workflowId = workflow.id!;
 
         const executeWorkflow = async () => {
             const window = await this._ensureWindow();
-            // console.log(window, 'window');
 
             const scraperIds = new Set<string>();
 
@@ -259,26 +280,32 @@ export class WorkflowService {
                 return rawResult[r];
             }
 
+            // Iterate over each column and run the scraper
             workflow.columns.forEach((column, columnIndex) => {
                 column.sourceColumns.forEach((sourceColumn, sourceColumnIndex) => {
+                    // Record the scraper id
                     scraperIds.add(sourceColumn.scraperId);
+                    // the callback will run after all scraper done to generate column cells from the scraper response
                     runScraperCallbacks.push(async (scraperMap) => {
                         const scraper = scraperMap.get(sourceColumn.scraperId);
                         if (!scraper) {
                             return;
                         }
+                        // Record scraper id with workflow id dependency list
+                        this._ensureScraperDependencyList(scraper.id).add(workflowId);
 
-                        this._ensureScraperReferences(scraper.id).add(workflowId);
-
+                        // To run scraper
                         const scraperResponse = await this._scraperService.runScraper({
                             scraper,
                             windowId: window.id!,
                             onCreated(scraperTab) {
+                                // Find scraper setting from workflow
                                 const scraperSetting = workflow.scraperSettings.find((setting) => setting.scraperId === scraper.id);
                                 if (!scraperSetting) {
                                     return;
                                 }
                                 const { mode, customValue } = scraperSetting;
+                                // To timeout or count threshold to stop scraper
                                 const threshold = mode === WorkflowScraperSettingMode.Custom && customValue
                                     ? scraper.mode === AutoExtractionMode.PageUrl
                                         ? new CountThreshold(customValue)
@@ -292,6 +319,7 @@ export class WorkflowService {
                                 threshold.onDone(() => {
                                     scraperTab.resolve(scraperTab.response);
                                 });
+
                                 if (threshold instanceof CountThreshold) {
                                     scraperTab.onPageChange(() => {
                                         threshold.count();
@@ -304,10 +332,13 @@ export class WorkflowService {
                                 }
                             },
                         });
+                        // Workflow A column will reference to source column B column, we find the column index of source column B
                         const cellColumnIndex = scraper.columns.findIndex((c) => c.id === sourceColumn.columnId);
 
                         scraperResponse.rows.forEach((row, rowIndex) => {
+                            // Get the cell value from the source column by column index
                             const cell = row.cells[cellColumnIndex];
+                            // A workflow column maybe have multiple source columns, At first, we create a collection to store scraper cells
                             const cellCollection = ensureCellCollection(rowIndex)[columnIndex];
 
                             if (!cell) {
@@ -320,6 +351,7 @@ export class WorkflowService {
                 });
             });
 
+            // Query scraper list of workflow required
             const scraperList = await this._scraperService.queryScrapersByIds(Array.from(scraperIds));
 
             const scraperMap = scraperList.reduce((map, scraper) => {
@@ -328,7 +360,7 @@ export class WorkflowService {
             }, new Map<string, IScraper>());
 
             const runScraperPromises = runScraperCallbacks.map((callback) => callback(scraperMap));
-
+            // Wait for all scraper done
             await Promise.all(runScraperPromises);
 
             const result = rawResult.map((rows) => {
@@ -364,7 +396,6 @@ export class WorkflowService {
         }
 
         const newRunningIds = runningIds.filter((runningId) => runningId !== workflowId);
-        // this._runningIdsProxy.set(newRunningIds);
         this._runningWorkflowIds$.next(newRunningIds);
     }
 
@@ -379,7 +410,6 @@ export class WorkflowService {
         if (runningIds.includes(id)) {
             return false;
         }
-        // this._runningIdsProxy.set([id].concat(runningIds));
         this._runningWorkflowIds$.next([id].concat(runningIds));
 
         return true;
@@ -392,16 +422,21 @@ export class WorkflowService {
         }
         this.workflowWindow = undefined;
 
-        this._workflowScraperReferenceMap.forEach((references, scraperId) => {
+        this._scraperDependencyListMap.forEach((references, scraperId) => {
             this._scraperService.stopScraper(scraperId);
         });
-        this._workflowScraperReferenceMap.clear();
+        this._scraperDependencyListMap.clear();
     }
 
     updateWorkflow(workflow: IWorkflow) {
         return this._dataSource.update(workflow);
     }
 
+    /**
+     * Handle request to run workflow
+     * @param workflow
+     * @returns
+     */
     private async _executeRunWorkflow(workflow: IWorkflow) {
         const workflowId = workflow.id!;
 
@@ -413,6 +448,7 @@ export class WorkflowService {
 
         const res = await this.runWorkflow(workflow);
 
+        // console.log('workflow done', workflow, res);
         if (res.rows.length <= 0) {
             return;
         }
@@ -480,12 +516,13 @@ export class WorkflowService {
         // this._onWorkflowDone$.next({ workflow, rows: res.rows });
     }
 
-    onSendEmail(callback: (ctx: IWorkflowDoneContext) => void) {
-        return this._onSendEmail$.subscribe((ctx) => {
-            if (ctx) {
-                callback(ctx);
-            }
-        });
+    addTriggerListener(triggerName: WorkflowTriggerName, callback: (workflow: IWorkflow, context: IWorkflowDoneContext) => void) {
+        const { _workflowTriggerListeners } = this;
+        if (!_workflowTriggerListeners.has(triggerName)) {
+            _workflowTriggerListeners.set(triggerName, new Set());
+        }
+
+        _workflowTriggerListeners.get(triggerName)!.add(callback);
     }
 
     onWorkflowDone(callback: (ctx: IWorkflowDoneContext) => void) {
@@ -563,7 +600,6 @@ export class WorkflowService {
 
         chrome.windows.onRemoved.addListener((windowId) => {
             if (windowId === this.workflowWindow?.id) {
-                // this._runningIdsProxy.set([]);
                 this._runningWorkflowIds$.next([]);
             }
         });

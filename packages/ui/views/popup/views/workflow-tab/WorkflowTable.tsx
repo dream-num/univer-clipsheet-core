@@ -1,6 +1,6 @@
 import type { DropdownMenuItem } from '@components/DropdownMenu';
 import { DropdownMenu } from '@components/DropdownMenu';
-import { Table } from '@components/Table';
+import { Table } from '@components/table/Table';
 import type {
     IGetWorkflowListParams,
     IWorkflow,
@@ -238,6 +238,6 @@ export const WorkflowTable = () => {
         return <WorkflowTableEmpty onClick={() => openWorkflowDialog()} />;
     }
 
-    return <Table rowKey="id" data={workflows} columns={columns} />;
+    return <Table scroll={{ y: 300 }} rowKey="id" data={workflows} columns={columns} />;
 };
 

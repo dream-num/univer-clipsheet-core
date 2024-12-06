@@ -252,8 +252,8 @@ function InnerPopup(props: IPopupProps) {
                                 ))}
                             </ul>
                         </div>
+                        {/** The slot for to insert component at bottom of sidebar */}
                         {sideAffix}
-                        {/* <UserProfile></UserProfile> */}
                     </aside>
                     <main className="grow ml-3">
                         <Layout
