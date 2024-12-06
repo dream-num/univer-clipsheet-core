@@ -5,7 +5,7 @@ import { t } from '@univer-clipsheet-core/locale';
 import type { GetStorageMessage, PushStorageMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, IframeDialogKeyEnum, promisifyMessage, sendSetIframeDialogKeyMessage } from '@univer-clipsheet-core/shared';
 import type { IWorkflow } from '@univer-clipsheet-core/workflow';
-import { TimerRepeatMode, WorkflowFilterMode, WorkflowMessageTypeEnum, WorkflowRuleName, WorkflowStorageKeyEnum, WorkflowTriggerName } from '@univer-clipsheet-core/workflow';
+import { TimerRepeatMode, WorkflowFilterMode, WorkflowMessageTypeEnum, WorkflowRuleName, WorkflowStorageKeyEnum } from '@univer-clipsheet-core/workflow';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';

@@ -1,6 +1,5 @@
-import type { IClickAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
+import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
-import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';

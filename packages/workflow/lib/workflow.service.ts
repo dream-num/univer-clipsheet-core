@@ -2,7 +2,7 @@
 import type { GetDataSourceMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource } from '@univer-clipsheet-core/shared';
 import type { IInitialSheet, ISheet_Row, ISheet_Row_Cell } from '@univer-clipsheet-core/table';
-import { Sheet_Cell_Type_Enum, TableService } from '@univer-clipsheet-core/table';
+import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import type { IScraper } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, CountThreshold, ScraperService, TimeoutThreshold } from '@univer-clipsheet-core/scraper';

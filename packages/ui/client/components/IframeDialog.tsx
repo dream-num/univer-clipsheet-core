@@ -34,7 +34,7 @@ export const IframeDialog = (props: IframeDialogProps) => {
 
     const rectH = roundToEven(rect.height);
     const rectW = roundToEven(rect.width);
-    console.log('IframeDialog', rectH, rectW, iframeSrc);
+    // console.log('IframeDialog', rectH, rectW, iframeSrc);
     return (
         <div style={{ height: `${rectH}px`, width: `${rectW}px` }}>
             <iframe className="iframe" src={iframeSrc} />

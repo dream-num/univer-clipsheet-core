@@ -1,4 +1,3 @@
-import type { IDrillDownColumn, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 
 export const typeOptions = [

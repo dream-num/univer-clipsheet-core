@@ -1,5 +1,6 @@
-import { ClipsheetMessageTypeEnum, SetStorageMessage } from './common.message';
-import type { IMessage, IMessageWithPayload } from './messages';
+import type { SetStorageMessage } from './common.message';
+import { ClipsheetMessageTypeEnum } from './common.message';
+import type { IMessage } from './messages';
 
 export enum UIStorageKeyEnum {
     Loading = 'loading',
@@ -31,7 +32,7 @@ export enum IframeDialogKeyEnum {
 export type ClientScrapAllTablesMessage = IMessage<ClientMessageTypeEnum.ScrapAllTables>;
 export type UIPopupShowedMessage = IMessage<UIMessageTypeEnum.PopupShowed>;
 export type UIOpenTableScrapingDialogMessage = IMessage<UIMessageTypeEnum.OpenTableScrapingDialog>;
-export type SetIframeDialogKeyMessage = SetStorageMessage<IframeDialogKeyEnum, UIStorageKeyEnum.IframeDialogKey>; 
+export type SetIframeDialogKeyMessage = SetStorageMessage<IframeDialogKeyEnum, UIStorageKeyEnum.IframeDialogKey>;
 
 export function sendSetIframeDialogKeyMessage(key: IframeDialogKeyEnum) {
     const msg: SetIframeDialogKeyMessage = {

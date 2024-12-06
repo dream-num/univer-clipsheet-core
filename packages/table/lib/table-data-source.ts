@@ -1,6 +1,5 @@
 import { getStorage, removeStorage, setStorage } from '@univer-clipsheet-core/shared';
 import { createIdentifier } from '@wendellhu/redi';
-import type { IInitialSheet } from './parser';
 import type { ITableRecord } from './table';
 import type { IGetTableRecordsParams, ScrapTablesMessage } from './table.message';
 import { TableStorageKeyEnum } from './table.message';

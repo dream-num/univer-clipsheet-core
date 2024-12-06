@@ -1,4 +1,4 @@
-import type { IMessage, PushStorageMessage, SetIframeDialogKeyMessage, UIOpenTableScrapingDialogMessage } from '@univer-clipsheet-core/shared';
+import type { IMessage, PushStorageMessage, UIOpenTableScrapingDialogMessage } from '@univer-clipsheet-core/shared';
 import { ClientMessageTypeEnum, ClipsheetMessageTypeEnum, IframeDialogKeyEnum, UIMessageTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { ScrapTablesMessage } from '@univer-clipsheet-core/table';
 import { TableMessageTypeEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
@@ -51,7 +51,7 @@ export class ClientController {
                             return;
                         }
 
-                        console.log('OpenIframeDialog', _iframePanelShadowComponent.active, payload.value);
+                        // console.log('OpenIframeDialog', _iframePanelShadowComponent.active, payload.value);
                         _iframePanelShadowComponent.setSrcKey(payload.value);
                         _iframePanelShadowComponent.activate();
                     }
