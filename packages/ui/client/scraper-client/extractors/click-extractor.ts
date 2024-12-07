@@ -1,5 +1,4 @@
 import type { ISheet_Row } from '@univer-clipsheet-core/table';
-import { getSheetsRowsData } from '@univer-clipsheet-core/table';
 import { ObservableValue } from '@univer-clipsheet-core/shared';
 import { ThresholdCounter } from '../../scraper-client/extractors/threshold-counter';
 import type { UnionLazyLoadElements } from '../../table-scraping/extractors/accurate-extractor';

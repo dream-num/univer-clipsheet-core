@@ -1,23 +1,17 @@
 
+import { ColumnTypeTag } from '@components/ColumnTypeTag';
+import { XLSXSvg } from '@components/icons';
 import { Select } from '@components/select';
+import { TableEmpty } from '@components/TableEmpty';
+import { getWorkflowColumnsByTable } from '@lib/helper';
+import { useImmediateDataSource } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
-import type { IGetScraperListParams, IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
-import { ScraperDataSourceKeyEnum } from '@univer-clipsheet-core/scraper';
-import type { GetDataSourceMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, generateRandomId, promisifyMessage } from '@univer-clipsheet-core/shared';
-import type { ITableRecord, ITableRecordsResponse } from '@univer-clipsheet-core/table';
+import type { ITableRecordsResponse } from '@univer-clipsheet-core/table';
 import { TableDataSourceKeyEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
-import type { IGetWorkflowListParams, IWorkflow, IWorkflowColumn } from '@univer-clipsheet-core/workflow';
-import { WorkflowDataSourceKeyEnum } from '@univer-clipsheet-core/workflow';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import type { DefaultOptionType } from 'rc-select/lib/Select';
 import React, { memo, useMemo } from 'react';
-import { useImmediateDataSource } from '@lib/hooks';
-import { TableEmpty } from '@components/TableEmpty';
-import { ColumnTypeTag } from '@components/ColumnTypeTag';
-import { XLSXSvg } from '@components/icons';
-import { getWorkflowColumnsByTable } from '@lib/helper';
 import { useWorkflowPanelContext } from '../context';
 
 // function toColumn(column: IScraperColumn | IWorkflowColumn): IWorkflowColumn {

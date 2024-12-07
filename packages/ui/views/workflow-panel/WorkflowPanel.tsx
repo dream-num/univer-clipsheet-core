@@ -223,7 +223,7 @@ const InnerWorkflowPanel = (props: {
     }
 
     const getConfirmButtons = () => {
-        console.log('workflow', workflow);
+        // console.log('workflow', workflow);
         const isEdit = Boolean(workflow.id);
 
         const createOrSaveWorkflow = (toRun: boolean) => {

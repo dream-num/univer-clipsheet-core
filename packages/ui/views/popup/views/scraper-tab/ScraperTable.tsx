@@ -103,7 +103,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
     const { state: runningScraperIds = [] } = useImmediateDataSource<string[]>(ScraperDataSourceKeyEnum.RunningScraperIds);
 
     const { state: innerData = [], getState: getInnerData, loading } = useDataSource<IScraper[], IGetScraperListParams>(ScraperDataSourceKeyEnum.ScraperList);
-    console.log(innerData, 'IScraper');
+    // console.log(innerData, 'IScraper');
     useEffect(() => {
         getInnerData({
             pageSize: defaultPageSize,

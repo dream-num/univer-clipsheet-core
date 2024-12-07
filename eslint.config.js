@@ -1,7 +1,7 @@
 import antfu from '@antfu/eslint-config';
 
 const baseRules = {
-    'curly': ['error', 'multi-line'],
+    curly: ['error', 'multi-line'],
     'no-empty-function': ['error'],
     'eol-last': ['error', 'always'],
     'import/no-self-import': 'error',
