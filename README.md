@@ -1,6 +1,6 @@
 # **univer-clipsheet-core**
 
-**univer-clipsheet-core** is the core implementation of the **Univer Clipsheet** functionality. This package is organized into separate modules for better scalability and maintainability, including `workflow`, `scraper`, `ui`, and `table`. Below, we introduce the key usage of each module and its components.
+**univer-clipsheet-core** is the core implementation of the [**Univer Clipsheet**](https://github.com/dream-num/univer-clipsheet) functionality. This package is organized into separate modules for better scalability and maintainability, including `workflow`, `scraper`, `ui`, and `table`. Below, we introduce the key usage of each module and its components.
 
 **English** | [简体中文](./README-zh.md)
 

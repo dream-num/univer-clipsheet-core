@@ -83,6 +83,7 @@ export class TableScrapingShadowComponent extends ShadowComponent {
                 return;
             }
 
+            _coverService.removeCover(this._coverId);
             _coverService.addCover(this._coverId, extractor.target);
 
             extractor.lazyLoadElements$.subscribe((lazyElements) => {
@@ -156,8 +157,8 @@ export class TableScrapingShadowComponent extends ShadowComponent {
         this._renderRoot = null;
     }
 
-    public override async activate(): Promise<void> {
-        await super.activate();
+    public override activate() {
+        super.activate();
         this._mount();
     }
 

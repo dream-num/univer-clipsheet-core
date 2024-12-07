@@ -86,7 +86,7 @@ export function sendSetStorageMessage(key: string, payload: any) {
     });
 }
 
-export function requestDataSource<T >(key: string, params: unknown, filter: (message: PushDataSourceMessage<T>) => boolean) {
+export function requestDataSource<T, P = Record<string, any>>(key: string, params: P, filter: (message: PushDataSourceMessage<T>) => boolean) {
     const getMsg: GetDataSourceMessage<string> = {
         type: ClipsheetMessageTypeEnum.GetDataSource,
         payload: {
@@ -99,3 +99,4 @@ export function requestDataSource<T >(key: string, params: unknown, filter: (mes
     return promisifyMessage<PushDataSourceMessage<T>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === key && filter(msg))
         .then((msg) => msg.payload.value);
 }
+

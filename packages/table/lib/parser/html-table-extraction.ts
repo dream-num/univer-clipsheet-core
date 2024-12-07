@@ -2,6 +2,7 @@
  * Copyright 2023-present DreamNum Inc.
  *
  */
+import { ObservableValue } from '@univer-clipsheet-core/shared';
 import type { IInitialSheet, ISheet_Row, ISheet_Row_Cell } from './misc';
 import { convertRelativeToAbsolute, generateSelector, getElementCompareContent, getElementText, Initial_Sheet_Type_Num, isEmptyCell, replaceControlChars, safeQueryHelper, Sheet_Cell_Type_Enum } from './misc';
 
@@ -209,7 +210,9 @@ interface ILazyLoadTableElements {
 }
 
 export class LazyLoadTableElements {
-    private _listeners = new Set<() => void>();
+    private _onRowsUpdated$ = new ObservableValue<ISheet_Row[]>([]);
+    private _onChange$ = new ObservableValue<void>(undefined);
+    // private _listeners = new Set<() => void>();
     private _lazyLoadTableElements: ILazyLoadTableElements[] = [];
     private _observers: MutationObserver[] = [];
     private _existingRows: Map<string, Node> = new Map();
@@ -218,6 +221,10 @@ export class LazyLoadTableElements {
         this._init();
 
         this._scrollListener();
+
+        this._onRowsUpdated$.subscribe(() => {
+            this._onChange$.next();
+        });
     }
 
     get rows() {
@@ -233,7 +240,6 @@ export class LazyLoadTableElements {
         const rows = queryTableScopeRows(table).filter((node) => this._tableRowFilter(node));
         if (rows.length) {
             this._addRowsToItem(item, rows);
-            this._notifyChange();
         }
     }
 
@@ -279,6 +285,8 @@ export class LazyLoadTableElements {
         element.sheet.density = element.sheet.cellCount / element.sheet.rows.length;
 
         element.isAdded = true;
+
+        this._onRowsUpdated$.next(sheet.rows);
     }
 
     private _scrollListener() {
@@ -293,7 +301,6 @@ export class LazyLoadTableElements {
                     const rows = queryTableScopeRows(element.table).filter((node) => this._tableRowFilter(node));
                     if (rows.length > 0) {
                         this._addRowsToItem(element, rows);
-                        this._notifyChange();
                     }
                 });
                 timer = null;
@@ -306,7 +313,6 @@ export class LazyLoadTableElements {
                     const rows = Array.from(mutation.addedNodes).filter((node) => this._tableRowFilter(node as Element)) as HTMLTableRowElement[];
 
                     this._addRowsToItem(element, rows);
-                    this._notifyChange();
 
                     timeoutReviewTable(element);
                 });
@@ -321,14 +327,12 @@ export class LazyLoadTableElements {
         });
     }
 
-    private _notifyChange() {
-        this._listeners.forEach((listener) => listener());
+    onRowsUpdated(listener: (rows: ISheet_Row[]) => void) {
+        return this._onRowsUpdated$.subscribe(listener);
     }
 
     onChange(listener: () => void) {
-        this._listeners.add(listener);
-
-        return () => this._listeners.delete(listener);
+        return this._onChange$.subscribe(listener);
     }
 
     private _disposeWithMe(observer: MutationObserver) {
@@ -343,7 +347,9 @@ export class LazyLoadTableElements {
         });
 
         this._observers = [];
-        this._listeners.clear();
+
+        this._onChange$.dispose();
+        this._onRowsUpdated$.dispose();
 
         this._existingRows.clear();
     }

@@ -42,7 +42,7 @@ function createEmptyColumn(type: Sheet_Cell_Type_Enum = Sheet_Cell_Type_Enum.TEX
     };
 }
 export const DataMergeForm = () => {
-    const { workflow: _workflow, setWorkflow, hasDataSource } = useWorkflowPanelContext();
+    const { workflow: _workflow, setWorkflow, boundDataSource } = useWorkflowPanelContext();
 
     const workflow = _workflow!;
 
@@ -263,7 +263,7 @@ export const DataMergeForm = () => {
                         <div key={index} className="border p-2 mt-4">
                             <div className="flex items-center justify-between">
                                 <span>{t('Title')}</span>
-                                {!hasDataSource && (
+                                {!boundDataSource && (
                                     <button onClick={() => handleDeleteColumn(column)} type="button" className="text-red-500 text-[0px] p-1 rounded hover:bg-gray-100 cursor-pointer">
                                         <TrashSvg />
                                     </button>
@@ -273,7 +273,7 @@ export const DataMergeForm = () => {
                                 <div className="flex items-center grow">
                                     <span className="text-nowrap text-sm mr-2">{t('ColumnName')}</span>
                                     <ScraperInput
-                                        disabled={hasDataSource}
+                                        disabled={boundDataSource}
                                         value={column.name}
                                         onChange={(v) => {
                                             columns[index].name = v;
@@ -288,7 +288,7 @@ export const DataMergeForm = () => {
                                 <div className="flex items-center grow">
                                     <span className="text-nowrap text-sm mr-2">{t('Type')}</span>
                                     <Select
-                                        disabled={hasDataSource}
+                                        disabled={boundDataSource}
                                         value={column.type}
                                         onChange={(v) => {
                                             columns[index].type = v;
@@ -343,7 +343,7 @@ export const DataMergeForm = () => {
                     );
                 })}
             </div>
-            {!hasDataSource && (
+            {!boundDataSource && (
                 <div className="mt-4">
                     <button
                         onClick={() => {

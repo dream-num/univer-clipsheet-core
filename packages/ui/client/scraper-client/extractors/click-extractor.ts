@@ -117,10 +117,8 @@ export class ClickExtractor extends ExtractionInterval {
     startAction(immediate = true) {
         const { lazyLoadElement } = this;
         if (lazyLoadElement) {
-            this._disposer = lazyLoadElement.onChange(() => {
-                const rowsData = getSheetsRowsData(this.lazyLoadElement)?.[0];
-
-                if (rowsData) {
+            this._disposer = lazyLoadElement.onRowsUpdated((rowsData) => {
+                if (rowsData.length > 0) {
                     this.data$.next(rowsData);
                 }
             });

@@ -5,9 +5,15 @@ import type { ITableRecord, TableRecordTypeEnum } from './table';
 
 export const inProgressTableRecordId = 'IN_PROGRESS_TABLE_RECORD';
 
+export interface ITableRecordsResponse {
+    data: ITableRecord[];
+    total: number;
+}
+
 export interface IGetTableRecordsParams {
     page: number;
     pageSize: number;
+    ids?: string[];
     recordTypes?: TableRecordTypeEnum[];
 }
 

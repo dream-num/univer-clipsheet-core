@@ -8,12 +8,12 @@ export interface IWorkflowPanelContext {
     setWorkflow?: React.Dispatch<React.SetStateAction<IWorkflow>>;
     service?: WorkflowPanelViewService;
     originTableId: string;
-    hasDataSource: boolean;
+    boundDataSource: boolean;
 }
 
 export const WorkflowPanelContext = React.createContext<IWorkflowPanelContext>({
     originTableId: '',
-    hasDataSource: false,
+    boundDataSource: false,
 });
 
 export function useWorkflowPanelContext() {

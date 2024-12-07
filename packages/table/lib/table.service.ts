@@ -46,13 +46,13 @@ export class TableService {
         return this._tableDataSource.delete(id);
     }
 
-    async pushTableRecords(_params?: IGetTableRecordsParams) {
+    async pushTableRecords(_params?: IGetTableRecordsParams, tabId?: number) {
         if (_params) {
             this._latestParams = _params;
         }
         // console.log('TableService:pushTableRecords', await this._tableDataSource.getList(this._latestParams));
 
-        return pushDataSource(TableDataSourceKeyEnum.TableRecords, await this._tableDataSource.getList(this._latestParams));
+        return pushDataSource(TableDataSourceKeyEnum.TableRecords, await this._tableDataSource.getList(this._latestParams), tabId);
     }
 
     listenMessage() {
@@ -64,7 +64,7 @@ export class TableService {
                 case ClipsheetMessageTypeEnum.GetDataSource: {
                     const { payload } = req;
                     if (payload.key === TableDataSourceKeyEnum.TableRecords) {
-                        this.pushTableRecords(payload.params);
+                        this.pushTableRecords(payload.params, sender.tab?.id);
                     }
 
                     break;

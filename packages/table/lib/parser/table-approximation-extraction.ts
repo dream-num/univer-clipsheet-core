@@ -3,9 +3,10 @@
  *
  */
 
+import { ObservableValue } from '@univer-clipsheet-core/shared';
 import { ajaxJsonToTable } from './ajax-json-to-table';
-import type { IInitialSheet, ITableElementAnalyzeRowData, UnknownJson } from './misc';
-import { deleteRepeatColumn, escapeSpecialCharacters, generateSelector, generateUniqueSelector, getCellData, getElementCompareContent, getElementsAtDepth, getElementText, getImageInAttributes, safeQueryHelper, toResultTable } from './misc';
+import type { IInitialSheet, ISheet_Row, ITableElementAnalyzeRowData, UnknownJson } from './misc';
+import { analyzeRowsToSheetRows, deleteRepeatColumn, escapeSpecialCharacters, generateSelector, generateUniqueSelector, getCellData, getElementCompareContent, getElementsAtDepth, getElementText, getImageInAttributes, safeQueryHelper, toResultTable } from './misc';
 
 const MIN_ELEMENT_SIZE_RATIO_LIMIT = 0.01;
 
@@ -298,7 +299,8 @@ interface ILazyLoadElements {
 }
 
 export class LazyLoadElements {
-    private _listeners = new Set<() => void>();
+    private _onRowsUpdated$ = new ObservableValue<ISheet_Row[]>([]);
+    private _onChange$ = new ObservableValue<void>(undefined);
     private _cloneTables: ILazyLoadElements[] = [];
     private _observers: MutationObserver[] = [];
     private _existingTextRows: Map<string, Node> = new Map();
@@ -308,6 +310,10 @@ export class LazyLoadElements {
         this._init();
 
         this._scrollListener();
+
+        this._onRowsUpdated$.subscribe(() => {
+            this._onChange$.next();
+        });
     }
 
     get rows() {
@@ -354,7 +360,9 @@ export class LazyLoadElements {
             });
         }
 
-        this._notifyChange();
+        setTimeout(() => {
+            this._onChange$.next();
+        });
     }
 
     private _disposeWithMe(observer: MutationObserver) {
@@ -409,7 +417,7 @@ export class LazyLoadElements {
             return node instanceof Element;
         }) as Element[];
 
-        cloneTable.rowData.push(...(new TableElementAnalyze({
+        const tableElementAnalyze = new TableElementAnalyze({
             element: tableElement,
             children: childElements,
             fitClasses: cloneTable.table.fitClasses,
@@ -417,9 +425,11 @@ export class LazyLoadElements {
             textContent: cloneTable.table.textContent,
             weightedScore: cloneTable.table.weightedScore,
             selectorString: cloneTable.table.selectorString,
-        }, config).tableData));
+        }, config);
 
-        this._notifyChange();
+        cloneTable.rowData = cloneTable.rowData.concat(tableElementAnalyze.tableData);
+
+        this._onRowsUpdated$.next(analyzeRowsToSheetRows(tableElementAnalyze.tableData));
     }
 
     private _scrollListener() {
@@ -434,14 +444,12 @@ export class LazyLoadElements {
         });
     }
 
-    private _notifyChange() {
-        this._listeners.forEach((listener) => listener());
+    onRowsUpdated(listener: (rows: ISheet_Row[]) => void) {
+        return this._onRowsUpdated$.subscribe(listener);
     }
 
     onChange(listener: () => void) {
-        this._listeners.add(listener);
-
-        return () => this._listeners.delete(listener);
+        return this._onChange$.subscribe(listener);
     }
 
     dispose() {
@@ -451,7 +459,8 @@ export class LazyLoadElements {
             obs.disconnect();
         });
         this._observers = [];
-        this._listeners.clear();
+        this._onChange$.dispose();
+        this._onRowsUpdated$.dispose();
         this._existingRows.clear();
         this._existingTextRows.clear();
     }

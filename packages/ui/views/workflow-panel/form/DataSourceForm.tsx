@@ -5,7 +5,7 @@ import type { IGetScraperListParams, IScraper, IScraperColumn } from '@univer-cl
 import { ScraperDataSourceKeyEnum } from '@univer-clipsheet-core/scraper';
 import type { GetDataSourceMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, generateRandomId, promisifyMessage } from '@univer-clipsheet-core/shared';
-import type { ITableRecord } from '@univer-clipsheet-core/table';
+import type { ITableRecord, ITableRecordsResponse } from '@univer-clipsheet-core/table';
 import { TableDataSourceKeyEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
 import type { IGetWorkflowListParams, IWorkflow, IWorkflowColumn } from '@univer-clipsheet-core/workflow';
 import { WorkflowDataSourceKeyEnum } from '@univer-clipsheet-core/workflow';
@@ -17,16 +17,17 @@ import { useImmediateDataSource } from '@lib/hooks';
 import { TableEmpty } from '@components/TableEmpty';
 import { ColumnTypeTag } from '@components/ColumnTypeTag';
 import { XLSXSvg } from '@components/icons';
+import { getWorkflowColumnsByTable } from '@lib/helper';
 import { useWorkflowPanelContext } from '../context';
 
-function toColumn(column: IScraperColumn | IWorkflowColumn): IWorkflowColumn {
-    return {
-        id: generateRandomId(),
-        name: column.name,
-        type: column.type,
-        sourceColumns: [],
-    };
-}
+// function toColumn(column: IScraperColumn | IWorkflowColumn): IWorkflowColumn {
+//     return {
+//         id: generateRandomId(),
+//         name: column.name,
+//         type: column.type,
+//         sourceColumns: [],
+//     };
+// }
 
 interface DataSourceSheetsSelectProps {
     className?: string;
@@ -88,63 +89,63 @@ const DataSourceSheetsSelect = (props: DataSourceSheetsSelectProps) => {
     );
 };
 
-async function getWorkflowColumnsByTable(tableRecord: ITableRecord) {
-    const triggerId = tableRecord.triggerId;
+// async function getWorkflowColumnsByTable(tableRecord: ITableRecord) {
+//     const triggerId = tableRecord.triggerId;
 
-    switch (tableRecord.recordType) {
-        case TableRecordTypeEnum.ScraperSheet: {
-            const msg: GetDataSourceMessage<ScraperDataSourceKeyEnum.ScraperList, IGetScraperListParams> = {
-                type: ClipsheetMessageTypeEnum.GetDataSource,
-                payload: {
-                    key: ScraperDataSourceKeyEnum.ScraperList,
-                    params: {
-                        pageSize: 1,
-                        filterRecordIds: [triggerId!],
-                    },
-                },
-            };
+//     switch (tableRecord.recordType) {
+//         case TableRecordTypeEnum.ScraperSheet: {
+//             const msg: GetDataSourceMessage<ScraperDataSourceKeyEnum.ScraperList, IGetScraperListParams> = {
+//                 type: ClipsheetMessageTypeEnum.GetDataSource,
+//                 payload: {
+//                     key: ScraperDataSourceKeyEnum.ScraperList,
+//                     params: {
+//                         pageSize: 1,
+//                         filterRecordIds: [triggerId!],
+//                     },
+//                 },
+//             };
 
-            chrome.runtime.sendMessage(msg);
+//             chrome.runtime.sendMessage(msg);
 
-            const response = promisifyMessage<PushDataSourceMessage<IScraper[]>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === ScraperDataSourceKeyEnum.ScraperList);
-            return response.then((res) => {
-                const [scraper] = res.payload.value;
-                if (scraper) {
-                    return scraper.columns.map(toColumn);
-                }
-            });
-        }
-        case TableRecordTypeEnum.WorkflowSheet: {
-            const msg: GetDataSourceMessage<WorkflowDataSourceKeyEnum.WorkflowList, IGetWorkflowListParams> = {
-                type: ClipsheetMessageTypeEnum.GetDataSource,
-                payload: {
-                    key: WorkflowDataSourceKeyEnum.WorkflowList,
-                    params: {
-                        pageSize: 1,
-                        filterRecordIds: [triggerId!],
-                    },
-                },
-            };
+//             const response = promisifyMessage<PushDataSourceMessage<IScraper[]>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === ScraperDataSourceKeyEnum.ScraperList);
+//             return response.then((res) => {
+//                 const [scraper] = res.payload.value;
+//                 if (scraper) {
+//                     return scraper.columns.map(toColumn);
+//                 }
+//             });
+//         }
+//         case TableRecordTypeEnum.WorkflowSheet: {
+//             const msg: GetDataSourceMessage<WorkflowDataSourceKeyEnum.WorkflowList, IGetWorkflowListParams> = {
+//                 type: ClipsheetMessageTypeEnum.GetDataSource,
+//                 payload: {
+//                     key: WorkflowDataSourceKeyEnum.WorkflowList,
+//                     params: {
+//                         pageSize: 1,
+//                         filterRecordIds: [triggerId!],
+//                     },
+//                 },
+//             };
 
-            chrome.runtime.sendMessage(msg);
+//             chrome.runtime.sendMessage(msg);
 
-            const response = promisifyMessage<PushDataSourceMessage<IWorkflow[]>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === WorkflowDataSourceKeyEnum.WorkflowList);
-            return response.then((res) => {
-                const [workflow] = res.payload.value;
-                if (workflow) {
-                    return workflow.columns.map(toColumn);
-                }
-            });
-        }
-    }
-}
+//             const response = promisifyMessage<PushDataSourceMessage<IWorkflow[]>>((msg) => msg.type === ClipsheetMessageTypeEnum.PushDataSource && msg.payload.key === WorkflowDataSourceKeyEnum.WorkflowList);
+//             return response.then((res) => {
+//                 const [workflow] = res.payload.value;
+//                 if (workflow) {
+//                     return workflow.columns.map(toColumn);
+//                 }
+//             });
+//         }
+//     }
+// }
 
 export const DataSourceForm = memo(() => {
     const {
         workflow: _workflow,
         setWorkflow,
         originTableId,
-        hasDataSource,
+        boundDataSource,
     } = useWorkflowPanelContext();
 
     const workflow = _workflow!;
@@ -154,7 +155,7 @@ export const DataSourceForm = memo(() => {
     const { state: tableRecordsSource = {
         data: [],
         total: 0,
-    } } = useImmediateDataSource<{ data: ITableRecord[]; total: number }>(TableDataSourceKeyEnum.TableRecords);
+    } } = useImmediateDataSource<ITableRecordsResponse>(TableDataSourceKeyEnum.TableRecords);
     const tableRecords = tableRecordsSource.data;
 
     const tableExisted = useMemo(() => {
@@ -165,7 +166,7 @@ export const DataSourceForm = memo(() => {
         return true;
     }, [originTableId, tableRecords]);
 
-    const disabled = hasDataSource && tableExisted;
+    const disabled = boundDataSource && tableExisted;
 
     const sheetOptions = useMemo(() => {
         return tableRecords.map((record) => {
@@ -185,15 +186,18 @@ export const DataSourceForm = memo(() => {
         const tableRecord = tableRecords.find((record) => record.id === tableId);
 
         if (!tableRecord) {
-            setWorkflow?.({
-                ...workflow,
-                columns: [],
-            });
+            if (!boundDataSource) {
+                // Only clear the columns when the table is not bound
+                setWorkflow?.({
+                    ...workflow,
+                    columns: [],
+                });
+            }
             return;
         }
 
         const newColumns = await getWorkflowColumnsByTable(tableRecord);
-
+        // console.log('newColumns', newColumns);
         workflow.columns = newColumns ?? [];
 
         setWorkflow?.({ ...workflow });
@@ -210,7 +214,7 @@ export const DataSourceForm = memo(() => {
                 <div className="mt-2">
                     <DataSourceSheetsSelect
                         disabled={disabled}
-                        notFoundContent={hasDataSource && (<span className="text-red-500">{t('DataSourceNoLongerExist')}</span>)}
+                        notFoundContent={boundDataSource && (<span className="text-red-500">{t('DataSourceNoLongerExist')}</span>)}
                         className="!w-full"
                         value={tableId}
                         options={sheetOptions}

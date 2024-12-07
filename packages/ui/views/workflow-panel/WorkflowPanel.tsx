@@ -118,16 +118,16 @@ const InnerWorkflowPanel = (props: {
     const [workflow, setWorkflow] = useState<IWorkflow>(createWorkflow());
     const [originTableId, setOriginTableId] = useState('');
 
-    const [hasDataSource, setHasDataSource] = useState(false);
+    const [boundDataSource, setBoundDataSource] = useState(false);
     const contextValue: IWorkflowPanelContext = useMemo(() => {
         return {
             workflow,
             setWorkflow,
             service,
-            hasDataSource,
+            boundDataSource,
             originTableId,
         };
-    }, [originTableId, hasDataSource, workflow, service]);
+    }, [originTableId, boundDataSource, workflow, service]);
 
     useEffect(() => {
         const request: GetStorageMessage = {
@@ -141,7 +141,7 @@ const InnerWorkflowPanel = (props: {
         responsePromise.then(({ payload }) => {
             const { value } = payload;
             if (value) {
-                setHasDataSource(Boolean(value.id && value.tableId));
+                setBoundDataSource(Boolean(value.id && value.tableId));
                 setOriginTableId(value.tableId ?? '');
                 setWorkflow((w) => ({ ...w, ...value }));
             }
@@ -223,7 +223,8 @@ const InnerWorkflowPanel = (props: {
     }
 
     const getConfirmButtons = () => {
-        const isEdit = Boolean(workflow?.id);
+        console.log('workflow', workflow);
+        const isEdit = Boolean(workflow.id);
 
         const createOrSaveWorkflow = (toRun: boolean) => {
             const workflowName = workflow?.name;

@@ -24,7 +24,7 @@ import { useDataSource, useImmediateDataSource } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
 import { defaultPageSize } from '@univer-clipsheet-core/shared';
 import { usePopupContext } from '@views/popup/context';
-import { openWorkflowDialog } from './helper';
+import { openWorkflowDialog } from '@lib/helper';
 
 const WorkflowTableEmptySvg = () => {
     return (

@@ -8,10 +8,14 @@ import './index.css';
 
 const columnClassName = '!border-b !border-gray-200 !text-left !text-[#5F6574] font-semibold font-xs';
 
-export type { TableProps } from 'rc-table';
+export interface TableProps extends RCTableProps {
+    rounded?: boolean;
+}
 
-export const Table = (props: RCTableProps) => {
-    const { columns: _columns, className, ...restProps } = props;
+// export type { TableProps } from 'rc-table';
+
+export const Table = (props: TableProps) => {
+    const { columns: _columns, rounded = false, className, ...restProps } = props;
 
     const columns = useMemo(() => {
         return _columns?.map((column) => {
@@ -23,7 +27,13 @@ export const Table = (props: RCTableProps) => {
     }, [_columns]);
 
     return (
-        <RCTable {...restProps} className={clsx('clipsheet-table', className)} columns={columns} />
+        <RCTable
+            {...restProps}
+            className={clsx('clipsheet-table', {
+                'clipsheet-table-rounded': rounded,
+            }, className)}
+            columns={columns}
+        />
     );
 };
 

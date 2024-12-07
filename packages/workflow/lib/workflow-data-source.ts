@@ -1,5 +1,5 @@
 import { createIdentifier } from '@wendellhu/redi';
-import { getStorage, setStorage } from '@univer-clipsheet-core/shared';
+import { generateRandomId, getStorage, setStorage } from '@univer-clipsheet-core/shared';
 import type { IWorkflow } from './workflow';
 import { type IGetWorkflowListParams, WorkflowStorageKeyEnum } from './workflow.message';
 
@@ -17,6 +17,7 @@ const getStorageWorkflowList = async () => (await getStorage<IWorkflow[]>(Workfl
 export class LocaleWorkflowDataSource implements IWorkflowDataSource {
     async add(workflow: IWorkflow) {
         const list = await getStorageWorkflowList();
+        workflow.id = generateRandomId();
         list.push(workflow);
         await setStorage(WorkflowStorageKeyEnum.WorkflowList, list);
 

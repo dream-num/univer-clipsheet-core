@@ -158,7 +158,7 @@ export const TableScrapingDialog = (props: {
     const [viewState, setViewState] = useObservableValue<ViewState>(tableScrapingShadowComponent.viewState$);
     const selectableViewStates = useMemo(() => [ViewState.Selecting, ViewState.NoData], []);
     const [content, setContent] = useState('');
-    const [tableLink] = useObservableValue(clientViewService.tableLink$);
+    // const [tableLink] = useObservableValue(clientViewService.tableLink$);
     const iframeUrlRef = React.useRef<string | null>(null);
     const isShowIcon = shouldShowIcon(viewState);
 
@@ -353,7 +353,7 @@ export const TableScrapingDialog = (props: {
                             : (
                                 <div>
                                     <div dangerouslySetInnerHTML={{ __html: content }}></div>
-                                    {(viewState === ViewState.Success && tableLink) && <div className="cs-success-footer"><a className="cs-active-color cs-underline cs-cursor-pointer" target="_blank" href={tableLink}>{t('ViewScrapedTableData')}</a></div>}
+                                    {(viewState === ViewState.Success) && <div className="cs-success-footer"><span className="cs-active-color cs-underline cs-cursor-pointer" onClick={clientViewService.triggerViewScrapedDataClick}>{t('ViewScrapedTableData')}</span></div>}
                                 </div>
                             )}
                     </div>

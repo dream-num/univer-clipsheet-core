@@ -1,5 +1,5 @@
 import { useDataSource, useStorageValue } from '@lib/hooks';
-import type { IGetTableRecordsParams, ITableRecord } from '@univer-clipsheet-core/table';
+import type { IGetTableRecordsParams, ITableRecord, ITableRecordsResponse } from '@univer-clipsheet-core/table';
 import { TableDataSourceKeyEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import { useMemo } from 'react';
 
@@ -9,7 +9,7 @@ export function useTableRecords() {
     const { state = {
         data: [],
         total: 0,
-    }, getState, loading } = useDataSource<{ data: ITableRecord[]; total: number }, IGetTableRecordsParams>(TableDataSourceKeyEnum.TableRecords);
+    }, getState, loading } = useDataSource<ITableRecordsResponse, IGetTableRecordsParams>(TableDataSourceKeyEnum.TableRecords);
 
     const combinedState = useMemo(() => {
         return inProgressTask ? [inProgressTask].concat(state.data) : state.data;

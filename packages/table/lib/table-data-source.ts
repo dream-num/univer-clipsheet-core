@@ -1,7 +1,7 @@
 import { getStorage, removeStorage, setStorage } from '@univer-clipsheet-core/shared';
 import { createIdentifier } from '@wendellhu/redi';
 import type { ITableRecord } from './table';
-import type { IGetTableRecordsParams, ScrapTablesMessage } from './table.message';
+import type { IGetTableRecordsParams, ITableRecordsResponse, ScrapTablesMessage } from './table.message';
 import { TableStorageKeyEnum } from './table.message';
 
 type ScraperTableMessagePayload = ScrapTablesMessage['payload'];
@@ -12,7 +12,7 @@ export interface AddTablePayload extends ScraperTableMessagePayload {
 export interface ITableDataSource<T = unknown> {
     add(table: AddTablePayload): Promise<string>;
     delete(taskId: string): Promise<void>;
-    getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord[]; total: number }>;
+    getList(params: IGetTableRecordsParams): Promise<ITableRecordsResponse>;
 }
 
 export const ITableDataSource = createIdentifier<ITableDataSource>('table-data-source');
@@ -25,9 +25,9 @@ export class LocalTableDataSource implements ITableDataSource {
 
         const record: ITableRecord = {
             ...payload.record,
+            triggerId: payload.triggerId,
             createdAt: Date.now(),
             value: '',
-            // value: payload.sheets,
         };
 
         await setStorage(TableStorageKeyEnum.TableSheetsPrefix + record.id, payload.sheets);
@@ -43,8 +43,14 @@ export class LocalTableDataSource implements ITableDataSource {
         await setStorage(TableStorageKeyEnum.TableRecords, list.filter((table) => table.id !== id));
     }
 
-    async getList(params: IGetTableRecordsParams): Promise<{ data: ITableRecord[]; total: number }> {
-        const list = await getStorageTableRecords();
+    async getList(params: IGetTableRecordsParams): Promise<ITableRecordsResponse> {
+        let list = await getStorageTableRecords();
+
+        const ids = params.ids;
+
+        if (ids?.length) {
+            list = list.filter((table) => ids.includes(table.id));
+        }
 
         return {
             data: list,
