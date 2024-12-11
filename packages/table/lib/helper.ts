@@ -29,15 +29,15 @@ export function getElementAccurateExtractionRows(element: HTMLElement) {
     return tableLikeParam ? getTableExtractionParamRows(tableLikeParam) : 0;
 }
 
-export function createLazyLoadElement(element: HTMLElement) {
+export function createLazyLoadElement(element: HTMLElement, isGrandchild = false) {
     if (element instanceof HTMLTableElement) {
         return new LazyLoadTableElements([element]);
     }
-    const tableLikeParam = getTableApproximationByElement(element);
+    const tableLikeParam = getTableApproximationByElement(element, isGrandchild);
     if (!tableLikeParam) {
         return;
     }
-    return new LazyLoadElements([tableLikeParam]);
+    return new LazyLoadElements([tableLikeParam], isGrandchild);
 }
 
 export function getSheetsRowsData(lazyLoadElement: UnionLazyLoadElements | null) {

@@ -16,15 +16,17 @@ function getBodyScrollTop(el: HTMLElement) {
     return window.scrollY + rect.top + rect.height - window.innerHeight + 200;
 }
 
+export type ScrollExtractorCallback = (oldRect: DOMRect, targetElement: HTMLElement) => void;
+
 export class ScrollExtractor extends ExtractionInterval {
     done$ = new ObservableValue<void>(undefined);
     scrollElement$ = new ObservableValue<HTMLElement | null>(null);
     private _lazyLoadElement$: ObservableValue<UnionLazyLoadElements>;
 
     private _disposer: (() => void) | null = null;
-
-    private _callbacks: Set<(originElement: HTMLElement, targetElement: HTMLElement) => void> = new Set();
-    private _thresholdCounter = new ThresholdCounter(3);
+    private _startElement: HTMLElement | null = null;
+    private _callbacks: Set<ScrollExtractorCallback> = new Set();
+    private _thresholdCounter = new ThresholdCounter(5);
 
     constructor(options: {
         minInterval: number;
@@ -46,13 +48,17 @@ export class ScrollExtractor extends ExtractionInterval {
         this._registerCallbacks();
     }
 
+    static scrollToTopOfElement(el: HTMLElement) {
+        window.scrollTo({
+            top: getBodyScrollTop(el),
+            behavior: 'smooth',
+        });
+    }
+
     private _registerCallbacks() {
-        const scrollCallback = (originElement: HTMLElement, targetElement: HTMLElement) => {
+        const scrollCallback: ScrollExtractorCallback = (oldRect, targetElement: HTMLElement) => {
             if (targetElement instanceof HTMLBodyElement) {
-                window.scrollTo({
-                    top: getBodyScrollTop(originElement),
-                    behavior: 'smooth',
-                });
+                ScrollExtractor.scrollToTopOfElement(this._startElement!);
             } else {
                 targetElement.scrollTo(0, targetElement.scrollHeight);
             }
@@ -64,12 +70,14 @@ export class ScrollExtractor extends ExtractionInterval {
             this.stopAction();
             this.done$.next();
         });
-        const noChangeCallback = () => {
+        const noChangeCallback: ScrollExtractorCallback = (oldRect, targetElement: HTMLElement) => {
             const { lazyLoadElement } = this;
             if (!lazyLoadElement) {
                 return;
             }
-            if (latestRows === lazyLoadElement.rows) {
+            const newRect = targetElement.getBoundingClientRect();
+
+            if (latestRows === lazyLoadElement.rows && newRect.height === oldRect.height) {
                 thresholdCounter.count();
             } else {
                 latestRows = lazyLoadElement.rows;
@@ -95,23 +103,32 @@ export class ScrollExtractor extends ExtractionInterval {
 
         const oldElScrollHeight = el.scrollHeight;
         const oldBodyScrollHeight = document.body.scrollHeight;
-        const oldRows = this.lazyLoadElement?.rows ?? 0;
 
-        elementScrollable && el.scrollTo({
-            top: el.scrollHeight,
-            behavior: 'smooth',
+        let rowsUpdated = false;
+        const dispose = this.lazyLoadElement.onRowsUpdated(() => {
+            rowsUpdated = true;
+            dispose();
         });
 
-        bodyScrollable && window.scrollTo({
-            top: getBodyScrollTop(el),
-            behavior: 'smooth',
-        });
+        const scrollTo = () => {
+            elementScrollable && el.scrollTo({
+                top: el.scrollHeight,
+                behavior: 'smooth',
+            });
+
+            bodyScrollable && window.scrollTo({
+                top: getBodyScrollTop(el),
+                behavior: 'smooth',
+            });
+        };
+
+        scrollTo();
 
         const duration = 10 * 1000;
 
         return new Promise<HTMLElement | void>((resolve) => {
             let timer: number;
-            const complete = (el: HTMLElement | void) => {
+            const emit = (el: HTMLElement | void) => {
                 resolve(el);
                 clearInterval(timer);
             };
@@ -119,18 +136,16 @@ export class ScrollExtractor extends ExtractionInterval {
             timer = setInterval(() => {
                 const newElScrollHeight = el.scrollHeight;
                 const newBodyScrollHeight = document.body.scrollHeight;
-                const newRows = this.lazyLoadElement?.rows ?? 0;
-                const rowsIncreased = newRows > oldRows;
 
-                if (elementScrollable && rowsIncreased && newElScrollHeight > oldElScrollHeight) {
-                    complete(el);
+                if (elementScrollable && rowsUpdated && newElScrollHeight > oldElScrollHeight) {
+                    emit(el);
                 }
-                if (bodyScrollable && rowsIncreased && newBodyScrollHeight > oldBodyScrollHeight) {
-                    complete(document.body);
+                if (bodyScrollable && rowsUpdated && newBodyScrollHeight > oldBodyScrollHeight) {
+                    emit(document.body);
                 }
             }, 1000);
             // Force complete after duration
-            setTimeout(() => complete(), duration);
+            setTimeout(() => emit(), duration);
         });
     }
 
@@ -139,14 +154,17 @@ export class ScrollExtractor extends ExtractionInterval {
             return false;
         }
 
+        this._startElement = el;
         const target = await this.detectScrollTarget(el);
 
         if (!target) {
             return false;
         }
 
+        let prevRect = target.getBoundingClientRect();
         this.startInterval(() => {
-            this._callbacks.forEach((cb) => cb(el, target));
+            this._callbacks.forEach((cb) => cb(prevRect, target));
+            prevRect = target.getBoundingClientRect();
         });
 
         return true;

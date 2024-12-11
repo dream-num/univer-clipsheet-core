@@ -10,6 +10,9 @@ export * from '@components/TableEmpty';
 export * from '@components/tooltip';
 export * from '@components/TableLoading';
 export * from '@components/icons';
+export * from '@components/link';
+export * from '@components/initial-sheet-view';
+export { PreviewTablePanel } from './client/components/PreviewTablePanel';
 
 export * from './client';
 

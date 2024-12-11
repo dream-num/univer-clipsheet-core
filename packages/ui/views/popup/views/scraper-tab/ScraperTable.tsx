@@ -1,11 +1,11 @@
 import type { DropdownMenuItem } from '@components/DropdownMenu';
-import { DropdownMenu } from '@components/DropdownMenu';
+import { DropdownMenu, HoverDropdownMenu } from '@components/DropdownMenu';
 import { MoreButton } from '@components/MoreButton';
 import { separateLineMenu } from '@components/PopupMenus';
 import { Table } from '@components/table/Table';
 import { TableLoading } from '@components/TableLoading';
 import { RunButton } from '@components/buttons';
-import { TableEmptySvg } from '@components/icons';
+import { CaretDownSvg, TableEmptySvg } from '@components/icons';
 import { useDataSource, useImmediateDataSource } from '@lib/hooks';
 import type { Translator } from '@univer-clipsheet-core/locale';
 import { t } from '@univer-clipsheet-core/locale';
@@ -91,6 +91,11 @@ enum MoreMenu {
     Delete = 'delete',
 }
 
+enum RunMenu {
+    Stop = 'stop',
+    Save = 'save',
+}
+
 export interface IScraperTableProps {
     onEmptyClick: () => void;
 }
@@ -137,7 +142,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
     }, [innerData, searchInput]);
 
     const columns: TableProps['columns'] = [
-        { title: <div className="pl-4">{t('Name')}</div>, width: 403, render: (value, record: IScraper) => {
+        { title: <div className="pl-4">{t('Name')}</div>, width: 373, render: (value, record: IScraper) => {
             return (
                 <div className="py-3 pl-4">
                     <div className="text-[#0E111E]">
@@ -157,26 +162,56 @@ export const ScraperTable = (props: IScraperTableProps) => {
                 </div>
             );
         } },
-        { title: <div className="text-center">{t('Run')}</div>, width: 77, render: (value, record: IScraper) => {
+        { title: <div className="text-center">{t('Run')}</div>, width: 110, render: (value, record: IScraper) => {
+            const isRunning = runningScraperIds.includes(record.id);
+            const menus: DropdownMenuItem[] = [
+                {
+                    text: t('Stop'),
+                    key: RunMenu.Stop,
+                },
+                {
+                    text: t('Save'),
+                    key: RunMenu.Save,
+                },
+            ];
+
             return (
                 <div className="text-center">
-                    <RunButton
-                        running={runningScraperIds.includes(record.id)}
-                        onStart={() => {
-                            const msg: RunScraperMessage = {
-                                type: ScraperMessageTypeEnum.RunScraper,
-                                payload: record,
-                            };
-                            chrome.runtime.sendMessage(msg);
-                        }}
-                        onStop={() => {
+                    <DropdownMenu
+                        disabled={!isRunning}
+                        menus={menus}
+                        trigger="hover"
+                        onChange={(key) => {
                             const msg: StopScraperMessage = {
                                 type: ScraperMessageTypeEnum.StopScraper,
-                                payload: record.id,
+                                payload: {
+                                    id: record.id,
+                                    toSave: key === RunMenu.Save,
+                                },
                             };
                             chrome.runtime.sendMessage(msg);
                         }}
-                    />
+                    >
+                        <div>
+                            <RunButton
+                                running={isRunning}
+                                onStart={() => {
+                                    const msg: RunScraperMessage = {
+                                        type: ScraperMessageTypeEnum.RunScraper,
+                                        payload: record,
+                                    };
+                                    chrome.runtime.sendMessage(msg);
+                                }}
+                                stopText={(
+                                    <div className="inline-flex items-center">
+                                        <span>{t('Scraping')}</span>
+                                        <CaretDownSvg className="ml-1" />
+                                    </div>
+                                )}
+                            />
+                        </div>
+                    </DropdownMenu>
+
                 </div>
             );
         } },

@@ -45,15 +45,20 @@
   border-bottom-right-radius: 6px !important;
 }
 
-.clipsheet-table-rounded td {
+
+.clipsheet-table-bordered td:first-child, 
+.clipsheet-table-bordered th:first-child {
+  border-left: none !important;
+}
+.clipsheet-table-bordered td {
   border-left: 1px solid #cdd0d8 !important;
   border-bottom: 1px solid #cdd0d8 !important;
 }
-.clipsheet-table-rounded td:last-child {
+.clipsheet-table-bordered td:last-child {
   border-right: 1px solid #cdd0d8 !important;
 }
 
-.clipsheet-table-rounded th {
-  border: 1px solid #cdd0d8 !important;
-  border-right: none !important;
+.clipsheet-table-bordered th {
+  border-width: 0 !important;
+  border-left: 1px solid #cdd0d8 !important;
 }

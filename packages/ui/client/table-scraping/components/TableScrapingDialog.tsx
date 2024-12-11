@@ -2,19 +2,20 @@ import { useObservableValue } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
-import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId } from '@univer-clipsheet-core/shared';
-import { getDrillDownSelector, getElementAccurateExtractionRows } from '@univer-clipsheet-core/table';
+import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
+import { findApproximationTable, getDrillDownSelector, getElementAccurateExtractionRows, getEspecialConfig, getTableApproximationByElement, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDraggable from 'react-draggable';
 import { CloseSingleDarkSvg, ErrorSingleSvg, LoadingSvg, SuccessSingleSvg } from '@components/icons';
-import { ClientViewService } from '../client-view.service';
-import { ElementInspectService } from '../element-inspect';
-import { RemountObserver } from '../remount-observer';
-import { TableScrapingShadowComponent, ViewState } from '../table-scraping';
-import { isSameSize, lookForParent } from '../tools';
-import { useElementInspect } from './hooks';
+import { useElementInspect } from '@client/components/hooks';
+import { isSameSize, lookForParent } from '@client/tools';
+import { ClientViewService } from '@client/client-view.service';
+import { ElementInspectService } from '@client/element-inspect';
+import { RemountObserver } from '@client/remount-observer';
+import { TableScrapingShadowComponent, ViewState } from '../table-scraping-shadow-component';
+import { TableElementExtractor, TableLikeElementExtractor } from '../extractors';
 
 function disposeAccurateExtraction(injector: Injector) {
     const elementInspectService = injector.get(ElementInspectService);
@@ -235,11 +236,20 @@ export const TableScrapingDialog = (props: {
         }
 
         const rows = getElementAccurateExtractionRows(element);
+
         const resolvedElement = lookForParent(element, {
-            until: (parent) => getElementAccurateExtractionRows(parent) > rows && isSameSize(element, parent),
+            until: (parent) => {
+                const currentRows = getElementAccurateExtractionRows(parent);
+
+                return currentRows > rows && isSameSize(element, parent);
+            },
         });
 
-        tableScrapingShadowComponent.inspectElement(resolvedElement ?? element);
+        const inspectedElement = resolvedElement ?? element;
+
+        // console.log('inspectedElement', inspectedElement);
+
+        tableScrapingShadowComponent.inspectElement(inspectedElement);
     }, [viewState]);
 
     const scrapSelectedTable = () => {

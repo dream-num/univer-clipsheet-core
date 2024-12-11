@@ -6,4 +6,4 @@ export { RemountObserver } from './remount-observer';
 export { ClientController } from './client.controller';
 export * from './scraper-client';
 export { ClientViewService } from './client-view.service';
-export { IframePanelShadowComponent } from './iframe-panel-shadow-component';
+export { IframeViewController } from './iframe-view';

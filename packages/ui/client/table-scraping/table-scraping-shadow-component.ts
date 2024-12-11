@@ -1,18 +1,18 @@
 import type { IInitialSheet, ITableApproximationExtractionParam, ResponseScrapTablesMessage, ScrapTablesMessage } from '@univer-clipsheet-core/table';
 import { generateRandomId, ObservableValue, promisifyMessage } from '@univer-clipsheet-core/shared';
 import { getElementText, getTableApproximationByElement, TableMessageTypeEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
-import { TableScrapingDialog } from '@client/components/TableScrapingDialog';
 import { Inject, Injector } from '@wendellhu/redi';
 import React from 'react';
 import type { Root } from 'react-dom/client';
 import { createRoot } from 'react-dom/client';
-// @ts-expect-error
-import htmlContent from '@client/templates/accurate-extraction-dialog-template.html';
 import { ClientViewService } from '@client/client-view.service';
 import { CoverService } from '../cover';
 import { RemountObserver } from '../remount-observer';
 import { lookForParent } from '../tools';
 import { ShadowComponent } from '../shadow-component';
+import { TableScrapingDialog } from './components/TableScrapingDialog';
+// @ts-expect-error
+import htmlContent from './accurate-extraction-dialog-template.html';
 
 import type { IExtractor } from './extractors';
 import { findLazyLoadElementsParams, findUpperTableExtractionParams, TableElementExtractor, TableLikeElementExtractor } from './extractors';
@@ -217,17 +217,19 @@ export class TableScrapingShadowComponent extends ShadowComponent {
 
         if (!params) {
             this.setExtractor(null);
-            return;
+            return false;
         }
 
         const foundElement = params instanceof Element ? params : params.element;
         if (foundElement === extractor?.target) {
-            return;
+            return false;
         }
 
         const newExtractor = params instanceof Element ? new TableElementExtractor(params as HTMLTableElement) : new TableLikeElementExtractor(params);
 
         this.setExtractor(newExtractor);
+
+        return true;
     }
 
     getSheets() {

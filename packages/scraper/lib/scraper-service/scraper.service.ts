@@ -5,6 +5,7 @@ import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSou
 import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
+import { calculateRandomInterval } from '@lib/tools';
 import { getScraperTaskChannelName, scraperTaskChannel, type ScraperTaskChannelResponse } from './scraper-channel';
 import { IScraperDataSource } from './scraper-data-source';
 import { ScraperTab } from './scraper-tab';
@@ -62,6 +63,7 @@ export class ScraperService {
             _scraperTabMap.set(scraper.id, newScraperTab);
 
             newScraperTab.promise.finally(() => {
+                console.log('ScraperTab disposed');
                 newScraperTab.dispose();
             });
 
@@ -84,16 +86,26 @@ export class ScraperService {
         return scraperTab.promise;
     }
 
-    async stopScraper(scraperId: string) {
+    async stopScraper(scraperId: string, toSave: boolean = false) {
         this._removeFromRunningScraperIds(scraperId);
         const scraperTab = this._scraperTabMap.get(scraperId);
 
-        if (scraperTab) {
+        if (!scraperTab) {
+            return;
+        }
+
+        if (toSave) {
+            scraperTab.resolve({
+                ...scraperTab.response,
+                done: true,
+            });
+        } else {
             scraperTab.reject({
                 code: ScraperErrorCode.Stop,
             });
-            scraperTab.dispose();
         }
+
+        scraperTab.dispose();
     }
 
     private async _removeFromRunningScraperIds(scraperId: string) {
@@ -113,10 +125,6 @@ export class ScraperService {
     }
 
     private _createDrillDownTask(scraper: IScraper, rows: ScraperTaskChannelResponse['rows']) {
-        function calculateRandomInterval(max: number, min: number) {
-            return (Math.random() * (max - min) + min) * 1000;
-        }
-
         let dispose: () => void = () => {};
         let drillDownTabs: chrome.tabs.Tab[] = [];
 
@@ -411,7 +419,9 @@ export class ScraperService {
                 }
 
                 case ScraperMessageTypeEnum.StopScraper: {
-                    this.stopScraper(msg.payload);
+                    const { toSave, id } = msg.payload;
+
+                    this.stopScraper(id, toSave);
                     break;
                 }
             }

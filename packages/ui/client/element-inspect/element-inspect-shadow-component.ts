@@ -1,8 +1,8 @@
 import { ObservableValue } from '@univer-clipsheet-core/shared';
-// @ts-expect-error
-import htmlContent from '@client/templates/element-inspect-mask-template.html';
 import { IframeCover } from '../cover';
 import { ShadowComponent } from '../shadow-component';
+// @ts-expect-error
+import htmlContent from './element-inspect-mask-template.html';
 import { MaskRenderer } from './mask-renderer';
 
 export const ELEMENT_INSPECT_CLASSES = {
@@ -62,7 +62,7 @@ export class ElementInspectShadowComponent extends ShadowComponent {
         if (!_target) {
             return;
         }
-
+        console.log('ElementInspectShadowComponent.logMouseMovement', _target);
         const target = _target as HTMLElement;
 
         if (target === this.iframeCover.cover) {

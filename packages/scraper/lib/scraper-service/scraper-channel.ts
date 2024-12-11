@@ -7,6 +7,7 @@ export interface ScraperTaskChannelRequest {
 }
 export interface ScraperTaskChannelResponse {
     rows: ISheet_Row[];
+    url?: string;
     done?: boolean;
 }
 

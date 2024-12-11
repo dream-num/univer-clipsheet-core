@@ -14,7 +14,6 @@ export class ClientViewService {
     }
 
     triggerViewScrapedDataClick() {
-        // console.log('triggerViewScrapedDataClick', this._scrapedTableId);
         this._onViewScrapedDataClick$.next(this._scrapedTableId);
     }
 

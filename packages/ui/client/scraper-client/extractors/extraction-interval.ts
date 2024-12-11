@@ -1,3 +1,4 @@
+import { calculateRandomInterval } from '@univer-clipsheet-core/scraper';
 import { ObservableValue } from '@univer-clipsheet-core/shared';
 
 export abstract class ExtractionInterval {
@@ -34,7 +35,7 @@ export abstract class ExtractionInterval {
         running$.next(true);
 
         const run = () => {
-            const delay = (minInterval$.value! + Math.random() * (maxInterval$.value! - minInterval$.value!)) * 1000;
+            const delay = calculateRandomInterval(minInterval$.value!, maxInterval$.value!);
             this._timeout = setTimeout(() => {
                 callback();
                 run();

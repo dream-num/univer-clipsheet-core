@@ -1,10 +1,11 @@
 
 import type { ITableApproximationExtractionParam } from '@univer-clipsheet-core/table';
 import { generateRandomId, ObservableValue } from '@univer-clipsheet-core/shared';
-import { findApproximationTables, getEspecialConfig, getTableExtractionParamRows, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
+import { createLazyLoadElement, findApproximationTables, getEspecialConfig, getTableApproximationByElement, getTableExtractionParamRows, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import { TableScrapingShadowComponent, ViewState } from '@client/table-scraping';
-import { IframePanelShadowComponent } from '@client/iframe-panel-shadow-component';
+import { IframeViewController } from '@client/iframe-view';
+import { getBodyElements } from '@client/tools';
 import { RemountObserver } from '../remount-observer';
 import { CoverService } from '../cover';
 import { TableElementExtractor, TableLikeElementExtractor } from '../table-scraping/extractors';
@@ -23,7 +24,7 @@ export class DetectTablesService {
         @Inject(RemountObserver) private _remountObserver: RemountObserver,
         @Inject(CoverService) private _coverService: CoverService,
         @Inject(TableScrapingShadowComponent) private _tableScrapingShadowComponent: TableScrapingShadowComponent,
-        @Inject(IframePanelShadowComponent) private _iframePanelShadowComponent: IframePanelShadowComponent
+        @Inject(IframeViewController) private _iframeViewController: IframeViewController
     ) {
         this.highlightElement$.subscribe((el) => {
             _coverService.removeCover(this._coverId);
@@ -61,7 +62,7 @@ export class DetectTablesService {
     }
 
     get enableHighlight() {
-        return !this._tableScrapingShadowComponent.active && !this._iframePanelShadowComponent.active;
+        return !this._tableScrapingShadowComponent.active && !this._iframeViewController.active;
     }
 
     getId(element: HTMLElement) {
@@ -93,32 +94,41 @@ export class DetectTablesService {
         this._tableMap.clear();
         this._tableRowsCache.clear();
 
-        const detectedTables = Array.from(document.body.querySelectorAll('table'))
-            .filter((table) => this._queryTableElementRows(table) > 1)
-            .sort((a, b) => this._queryTableElementRows(b) - this._queryTableElementRows(a));
+        const bodyElements = getBodyElements(document);
 
-        const detectedTableLikeParams = findApproximationTables(document.body as HTMLBodyElement, getEspecialConfig())
-            .filter((table) => {
-                const { element } = table;
-                const rect = element.getBoundingClientRect();
-                if (rect.width <= 0
+        bodyElements.forEach((bodyElement) => {
+            const detectedTables = Array.from(bodyElement.querySelectorAll('table'))
+                .filter((table) => this._queryTableElementRows(table) > 1)
+                .sort((a, b) => this._queryTableElementRows(b) - this._queryTableElementRows(a));
+
+            const detectedTableLikeParams = findApproximationTables(bodyElement, getEspecialConfig())
+                .filter((table) => {
+                    const { element } = table;
+                    const rect = element.getBoundingClientRect();
+
+                    if (rect.width <= 0
                     || rect.height <= 0
                     || !element.checkVisibility({ opacityProperty: true, visibilityProperty: true } as unknown as { checkOpacity: boolean; visibilityProperty: boolean })
                     || element instanceof HTMLSelectElement) {
-                    return false;
-                }
-                if (table.weightedScore < 1000000) {
-                    return false;
-                }
-                return true;
-            })
-            .sort((a, b) => b.weightedScore - a.weightedScore);
+                        return false;
+                    }
 
-        detectedTables.forEach((table) => {
-            this._tableMap.set(generateRandomId(), table);
-        });
-        detectedTableLikeParams.forEach((table) => {
-            this._tableMap.set(generateRandomId(), table);
+                    const rows = getTableExtractionParamRows(table);
+                    console.log('average weight', table.weightedScore / rows);
+
+                    if (table.weightedScore < 1000000) {
+                        return false;
+                    }
+                    return true;
+                })
+                .sort((a, b) => b.weightedScore - a.weightedScore);
+
+            detectedTables.forEach((table) => {
+                this._tableMap.set(generateRandomId(), table);
+            });
+            detectedTableLikeParams.forEach((table) => {
+                this._tableMap.set(generateRandomId(), table);
+            });
         });
 
         this.tableElements$.next(Array.from(this._tableMap.values()).map((table) => this._resolveTableElement(table)));

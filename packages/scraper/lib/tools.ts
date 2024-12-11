@@ -44,3 +44,7 @@ export const setCurrentScraper = (setScraper: IScraper | ((old: IScraper) => ISc
         postMessage(setScraper);
     }
 };
+
+export function calculateRandomInterval(max: number, min: number) {
+    return (Math.random() * (max - min) + min) * 1000;
+}

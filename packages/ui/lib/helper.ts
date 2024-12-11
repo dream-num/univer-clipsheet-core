@@ -1,7 +1,7 @@
 import type { IGetScraperListParams, IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { ScraperDataSourceKeyEnum } from '@univer-clipsheet-core/scraper';
 import type { GetDataSourceMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, closePopup, generateRandomId, IframeDialogKeyEnum, promisifyMessage, sendSetIframeDialogKeyMessage } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, closePopup, generateRandomId, IframeViewTypeEnum, promisifyMessage, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
 import type { ITableRecord } from '@univer-clipsheet-core/table';
 import { TableRecordTypeEnum } from '@univer-clipsheet-core/table';
 import type { IGetWorkflowListParams, IWorkflow, IWorkflowColumn } from '@univer-clipsheet-core/workflow';
@@ -73,7 +73,7 @@ export async function getWorkflowColumnsByTable(tableRecord: ITableRecord) {
 }
 
 export function openWorkflowDialog(workflow?: Partial<IWorkflow>) {
-    sendSetIframeDialogKeyMessage(IframeDialogKeyEnum.WorkflowPanel);
+    sendSetIframeViewMessage(IframeViewTypeEnum.WorkflowPanel);
 
     chrome.runtime.sendMessage({
         type: ClipsheetMessageTypeEnum.SetStorage,

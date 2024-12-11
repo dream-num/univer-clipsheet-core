@@ -32,6 +32,7 @@ export enum TableStorageKeyEnum {
     InProgressTableRecord = 'in_progress_table_record',
     CurrentTableRecord = 'current_table_record',
     TableSheetsPrefix = 'table_sheets_',
+    PreviewSheet = 'preview_sheet',
 }
 
 // Table Messages

@@ -28,7 +28,7 @@ const ROW_SIMILAR_COUNT_RATIO = 0.6;
 
 const MAX_CELL_DIFF_BETWEEN_MERGED_ROWS = 3;
 
-const MIN_COLUMN_ROW_RATIO_LIMIT = 8;
+const MIN_COLUMN_ROW_RATIO_LIMIT = 10;
 
 interface IWorkAroundForEspecialHostItem {
     omitRowElementSelectors: string[];
@@ -55,6 +55,12 @@ const WORK_AROUND_FOR_ESPECIAL_HOST: IWorkAroundForEspecialHost = {
             // 'div.css-175oi2r.r-18u37iz.r-1h0z5md:nth-of-type(3)',
             // 'div.css-175oi2r.r-18u37iz.r-1h0z5md:nth-of-type(4)',
         ],
+        topElementExceptCheckShape: false,
+    },
+    'weibo.com': {
+        omitRowElementSelectors: [],
+        forcedAddRowClasses: [],
+        forcedAddCellSelectors: [],
         topElementExceptCheckShape: false,
     },
     'linkedin.com': {
@@ -303,8 +309,9 @@ export class LazyLoadElements {
     private _onChange$ = new ObservableValue<void>(undefined);
     private _cloneTables: ILazyLoadElements[] = [];
     private _observers: MutationObserver[] = [];
-    private _existingTextRows: Map<string, Node> = new Map();
-    private _existingRows: Set<Node> = new Set();
+    private _existingTexts: Set<string> = new Set();
+    // private _existingTextRows: Map<string, Node> = new Map();
+    // private _existingRows: Set<Node> = new Set();
 
     constructor(private _tables: ITableApproximationExtractionParam[], private _isGrandchild = false) {
         this._init();
@@ -377,16 +384,19 @@ export class LazyLoadElements {
                 // if (node.parentElement !== cloneTable.table.element) {
                 //     return false;
                 // }
+            // if (this._existingRows.has(node)) {
+            //     return false;
+            // }
 
-            if (this._existingRows.has(node)) {
-                return false;
-            }
+            // const isExsiting = this._existingRows.has(node)
+
             const text = getElementCompareContent(node as HTMLElement);
-            if (this._existingTextRows.has(text)) {
+            if (this._existingTexts.has(text)) {
                 return false;
             }
-            this._existingTextRows.set(text, node);
-            this._existingRows.add(node);
+            this._existingTexts.add(text);
+
+            // this._existingRows.add(node);
             return true;
         }) as Element[];
     }
@@ -404,7 +414,9 @@ export class LazyLoadElements {
 
             addedNodes = this._filterAddedNodes(elements);
         } else {
+            console.log('tableElement.children', tableElement.children);
             addedNodes = this._filterAddedNodes(Array.from(tableElement.children));
+            console.log('tableElement.addedNodes', addedNodes);
         }
 
         if (addedNodes.length === 0) {
@@ -461,8 +473,8 @@ export class LazyLoadElements {
         this._observers = [];
         this._onChange$.dispose();
         this._onRowsUpdated$.dispose();
-        this._existingRows.clear();
-        this._existingTextRows.clear();
+        // this._existingRows.clear();
+        this._existingTexts.clear();
     }
 
     getFilterTable() {
@@ -602,7 +614,7 @@ function getApproximationWithForce(element: Element): ITableApproximationExtract
     };
 }
 
-function findApproximationTable(element: Element, bodyWidth: number = 0, bodyHeight: number = 0, config?: IWorkAroundForEspecialHostItem | undefined) {
+export function findApproximationTable(element: Element, bodyWidth: number = 0, bodyHeight: number = 0, config?: IWorkAroundForEspecialHostItem | undefined) {
     if (EXCLUDED_TAGS.includes(element.tagName.toLowerCase())) {
         return;
     }
@@ -954,7 +966,7 @@ function compareTableRowKeys(cellKeys1: string[], cellKeys2: string[]) {
     return true;
 }
 
-function fitColumnByTable(tablesElements: ITablesElementData[]) {
+export function fitColumnByTable(tablesElements: ITablesElementData[]) {
     const resultTableData: ITablesElementData[] = [];
     tablesElements.forEach((tablesElement) => {
         const columnDataKeys: ITableElementAnalyzeRowData = {};

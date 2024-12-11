@@ -34,7 +34,10 @@ export type UpdateScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.Up
     scraper: IScraper;
     toRun?: boolean;
 }>;
-export type StopScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.StopScraper, string>;
+export type StopScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.StopScraper, {
+    id: string;
+    toSave: boolean;
+}>;
 export type DeleteScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.DeleteScraper, string>;
 
 export type RunScraperFailedMessage = IMessageWithPayload<ScraperMessageTypeEnum.RunScraperFailed, IScraper>;

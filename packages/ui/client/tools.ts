@@ -51,10 +51,11 @@ function isEmptyIframe(iframe: HTMLIFrameElement) {
     return !iframe.contentDocument?.body;
 }
 
-function getBodyElements(doc: Document) {
+export function getBodyElements(doc: Document) {
     const iframeBodyList = Array.from(doc.querySelectorAll('iframe'))
         .filter((iframe) => isEmptyIframe(iframe) === false)
-        .map((iframe) => iframe.contentDocument!.body);
+        .map((iframe) => iframe.contentDocument!.body)
+        .filter((body) => body.checkVisibility());
 
     const bodyList = [doc.body as HTMLBodyElement].concat(iframeBodyList as HTMLBodyElement[]);
 

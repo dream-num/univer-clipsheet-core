@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { IPopupMenu } from './PopupMenus';
 import { PopupMenus } from './PopupMenus';
 import './tailwind.css';
+import type { ITooltipProps } from './tooltip';
 import { Tooltip } from './tooltip';
 
 export interface IDropdownMenuProps {
@@ -11,6 +12,7 @@ export interface IDropdownMenuProps {
     visible?: boolean;
     disabled?: boolean;
     placement?: string;
+    trigger?: ITooltipProps['trigger'];
     onVisibleChange?: (visible: boolean) => void;
     onChange?: (value: string) => void;
     onMouseLeave?: () => void;
@@ -31,13 +33,16 @@ export const DropdownMenu: FC<PropsWithChildren<IDropdownMenuProps>> = (props) =
         onMouseLeave,
         onOptionHover,
         onChange,
-        disabled = false } = props;
+        trigger = 'click',
+        disabled = false,
+    } = props;
 
     const [visible, setVisible] = useState(_visible);
     const visibleRef = useRef(visible);
     visibleRef.current = visible;
 
     const onVisibleChange = useCallback((visible: boolean) => {
+        console.log('onVisibleChange', visible);
         setVisible(visible);
         _onVisibleChange?.(visible);
     }, [_onVisibleChange]);
@@ -82,7 +87,7 @@ export const DropdownMenu: FC<PropsWithChildren<IDropdownMenuProps>> = (props) =
             overlayInnerStyle={{ padding: 0 }}
             showArrow={false}
             placement={placement}
-            trigger="click"
+            trigger={trigger}
             overlay={(
                 <div ref={menusContainerRef} onMouseLeave={onMouseLeave}>
                     <PopupMenus

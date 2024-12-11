@@ -11,7 +11,7 @@ export enum UIStorageKeyEnum {
     SidePanelPath = 'side_panel_path',
     RunningWorkflowIds = 'running_workflow_ids',
     RunningScrapingIds = 'running_scraping_ids',
-    IframeDialogKey = 'iframe_dialog_key',
+    IframeView = 'iframe_view',
 }
 
 export enum UIMessageTypeEnum {
@@ -23,22 +23,23 @@ export enum ClientMessageTypeEnum {
     ScrapAllTables = 'scrap_all_tables',
 }
 
-export enum IframeDialogKeyEnum {
+export enum IframeViewTypeEnum {
     None = 'none',
     WorkflowPanel = 'workflow_panel',
     TablePanel = 'table_panel',
+    PreviewTablePanel = 'preview_table_panel',
 }
 
 export type ClientScrapAllTablesMessage = IMessage<ClientMessageTypeEnum.ScrapAllTables>;
 export type UIPopupShowedMessage = IMessage<UIMessageTypeEnum.PopupShowed>;
 export type UIOpenTableScrapingDialogMessage = IMessage<UIMessageTypeEnum.OpenTableScrapingDialog>;
-export type SetIframeDialogKeyMessage = SetStorageMessage<IframeDialogKeyEnum, UIStorageKeyEnum.IframeDialogKey>;
+export type SetIframeViewMessage = SetStorageMessage<IframeViewTypeEnum, UIStorageKeyEnum.IframeView>;
 
-export function sendSetIframeDialogKeyMessage(key: IframeDialogKeyEnum) {
-    const msg: SetIframeDialogKeyMessage = {
+export function sendSetIframeViewMessage(key: IframeViewTypeEnum) {
+    const msg: SetIframeViewMessage = {
         type: ClipsheetMessageTypeEnum.SetStorage,
         payload: {
-            key: UIStorageKeyEnum.IframeDialogKey,
+            key: UIStorageKeyEnum.IframeView,
             value: key,
         },
     };

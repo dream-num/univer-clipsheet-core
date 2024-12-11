@@ -2,6 +2,7 @@ import type { IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, ScraperErr
 import { AutoExtractionMode, PAGE_URL_SLOT } from '@lib/scraper';
 import { ObservableValue } from '@univer-clipsheet-core/shared';
 import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
+import { calculateRandomInterval } from '@lib/tools';
 import type { ScraperTaskChannelResponse } from './scraper-channel';
 
 export interface ScraperTabResponseError {
@@ -130,6 +131,7 @@ export class ScraperTab {
         const responseCallback = (scraper: IScraper, res: ScraperTabResponse) => {
             this._response = mergeResponse(this._response, res);
 
+            console.log('new response from scraper', scraper, 'response:', res);
             if (this._response.done) {
                 this._resolve(this._response);
             }
@@ -150,10 +152,12 @@ export class ScraperTab {
                 return;
             }
 
-            this._currentPage$.next(_currentPage$.value + 1);
+            setTimeout(() => {
+                this._currentPage$.next(_currentPage$.value + 1);
 
-            const nextPageUrl = generateScraperPageUrl(scraper, this._currentPage$.value);
-            chrome.tabs.update(tabId, { url: nextPageUrl });
+                const nextPageUrl = generateScraperPageUrl(scraper, this._currentPage$.value);
+                chrome.tabs.update(tabId, { url: nextPageUrl });
+            }, calculateRandomInterval(4, 1));
         };
 
         _responseCallbacks.add(responseCallback);
@@ -221,7 +225,7 @@ export class ScraperTab {
         if (this._dispose$.value) {
             return;
         }
-
+        console.log('scraper tab dispose');
         this._dispose$.next(true);
         this._dispose$.dispose();
         this._onError$.dispose();
@@ -229,6 +233,7 @@ export class ScraperTab {
         const tabId = this._tab?.id;
 
         if (tabId) {
+            console.log('remove tab', tabId);
             chrome.tabs.remove(tabId);
         }
         this._responseInterceptors.clear();

@@ -1,8 +1,61 @@
 import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
-import { AutoExtractionMode, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
-import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
+import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
+import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
+import { createLazyLoadElement, findElementBySelector, getTableApproximationByElement } from '@univer-clipsheet-core/table';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
+
+function scrollToBottom() {
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+function intervalUntil(duration: number, interval: number, callbacks: {
+    onInterval: () => void;
+    onTimeout: () => void;
+}) {
+    const time = Date.now();
+    let timer: number;
+
+    function cancel() {
+        clearInterval(timer);
+    }
+
+    const { onInterval, onTimeout } = callbacks;
+
+    function intervalCallback() {
+        onInterval();
+        if (Date.now() - time > duration) {
+            clearInterval(timer);
+            onTimeout();
+        }
+    }
+
+    timer = setInterval(intervalCallback, interval);
+
+    return cancel;
+}
+
+function promisifyIntervalUntil<T = unknown>(duration: number, interval: number, callback: (resolve: (value: T) => void) => void) {
+    return new Promise<T | void>((_resolve) => {
+        let cancel: () => void;
+        const resolve = (value: T | void) => {
+            cancel?.();
+            _resolve(value);
+        };
+
+        cancel = intervalUntil(duration, interval, {
+            onInterval: () => {
+                const resolve = (value: T) => {
+                    cancel();
+                    _resolve(value);
+                };
+
+                callback(resolve);
+            },
+            onTimeout: () => resolve(),
+        });
+    });
+}
 
 export class ScraperClientChannel implements IClientChannel {
     constructor() {
@@ -16,45 +69,57 @@ export class ScraperClientChannel implements IClientChannel {
     private async waitElement(_selectors: string | string[], timeout: number = 10000) {
         const selectors = Array.isArray(_selectors) ? _selectors : [_selectors];
 
-        let timer: number;
-        const startTime = Date.now();
-        return new Promise<HTMLElement[] | void>((resolve) => {
-            findElements();
-
-            function resolveInterval(value: HTMLElement[] | void) {
-                clearInterval(timer);
-                resolve(value);
+        return promisifyIntervalUntil<HTMLElement[]>(timeout, 500, (resolve) => {
+            const elements = selectors.map((selector) => findElementBySelector(selector));
+            const success = elements.every(Boolean);
+            if (success) {
+                resolve(elements as HTMLElement[]);
             }
+        });
+    }
 
-            function findElements() {
-                if (Date.now() - startTime > timeout) {
-                    resolveInterval();
-                    return;
-                }
-
-                const elements = selectors.map((selector) => findElementBySelector(selector));
-                const success = elements.every(Boolean);
-
-                if (success) {
-                    resolveInterval(elements as HTMLElement[]);
-                }
+    private async waitLazyLoadElement(el: HTMLElement) {
+        return promisifyIntervalUntil<UnionLazyLoadElements>(5000, 500, (resolve) => {
+            const lazyLoadElement = createLazyLoadElement(el);
+            if (lazyLoadElement) {
+                resolve(lazyLoadElement);
             }
-
-            timer = setInterval(findElements, 500);
         });
     }
 
     private async _clickExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
         const scraperConfig = scraper.config as IClickAutoExtractionConfig;
-        const elements = await this.waitElement([scraper.targetSelector, scraperConfig.buttonSelector]);
-        if (!elements) {
-            return handleFail();
-        }
-        const [targetElement, buttonElement] = elements;
 
-        const lazyLoadElement = createLazyLoadElement(targetElement);
-        if (!lazyLoadElement) {
-            return handleFail();
+        const waitTargetElement = this.waitElement(scraper.targetSelector);
+        const waitButtonElement = this.waitElement(scraperConfig.buttonSelector);
+
+        const [targetElement, buttonElement] = (await Promise.all([waitTargetElement, waitButtonElement])).flat();
+
+        const lazyLoadElement = targetElement
+            ? createLazyLoadElement(targetElement)
+            : undefined;
+
+        const pushInitialRows = () => {
+            if (!lazyLoadElement) {
+                return;
+            }
+            const sheet = lazyLoadElement.getAllSheets()[0];
+            if (!sheet) {
+                return;
+            }
+
+            handleResponse({
+                rows: sheet.rows,
+            });
+        };
+
+        if (!buttonElement || !lazyLoadElement) {
+            setTimeout(() => {
+                pushInitialRows();
+                handleFail();
+            }, calculateRandomInterval(scraperConfig.maxInterval, scraperConfig.minInterval));
+
+            return;
         }
 
         const clickExtractor = new ClickExtractor({
@@ -64,7 +129,7 @@ export class ScraperClientChannel implements IClientChannel {
             button: buttonElement,
         });
 
-        let latestTargetElement = targetElement;
+        let latestTargetElement = targetElement!;
         clickExtractor.registerCallback((btn) => {
             const buttonElement2 = findElementBySelector(scraperConfig.buttonSelector);
             const targetElement2 = findElementBySelector(scraper.targetSelector);
@@ -86,6 +151,8 @@ export class ScraperClientChannel implements IClientChannel {
             }
         });
 
+        clickExtractor.registerCallback(pushInitialRows);
+
         clickExtractor.data$.subscribe((data) => {
             handleResponse({
                 rows: data,
@@ -99,12 +166,6 @@ export class ScraperClientChannel implements IClientChannel {
             });
         });
 
-        const initialRows = lazyLoadElement.getAllSheets()[0]?.rows;
-        if (initialRows?.length > 0) {
-            handleResponse({
-                rows: initialRows,
-            });
-        }
         clickExtractor.startAction(false);
     }
 
@@ -135,14 +196,20 @@ export class ScraperClientChannel implements IClientChannel {
         const targetElement = elements?.[0];
 
         const scraperConfig = scraper.config as IScrollAutoExtractionConfig;
-
         if (!targetElement) {
             return handleFail();
         }
-        const lazyLoadElement = createLazyLoadElement(targetElement);
+
+        const lazyLoadElement = await this.waitLazyLoadElement(targetElement);
+
         if (!lazyLoadElement) {
             return handleFail();
         }
+
+        let rows: ISheet_Row[] = [];
+        lazyLoadElement.onRowsUpdated((newRows) => {
+            rows = rows.concat(newRows);
+        });
 
         const scrollExtractor = new ScrollExtractor({
             minInterval: scraperConfig.minInterval,
@@ -150,10 +217,14 @@ export class ScraperClientChannel implements IClientChannel {
             lazyLoadElement,
         });
 
+        const sheet = lazyLoadElement.getAllSheets()[0];
+        if (sheet) {
+            rows = rows.concat(sheet.rows);
+        }
+
         scrollExtractor.done$.subscribe(() => {
-            const [sheet] = scrollExtractor.lazyLoadElement.getAllSheets();
             handleResponse({
-                rows: sheet.rows,
+                rows,
                 done: true,
             });
         });
@@ -161,9 +232,8 @@ export class ScraperClientChannel implements IClientChannel {
         scrollExtractor.startAction(targetElement)
             .then((success) => {
                 if (!success) {
-                    const [sheet] = scrollExtractor.lazyLoadElement.getAllSheets();
                     handleResponse({
-                        rows: sheet.rows,
+                        rows,
                         done: true,
                     });
                 }
@@ -180,7 +250,10 @@ export class ScraperClientChannel implements IClientChannel {
             });
         };
 
-        const handleResponse = (res: ScraperTaskChannelResponse) => scraperTaskChannel.sendResponse(port, res);
+        const handleResponse = (res: ScraperTaskChannelResponse) => {
+            res.url = window.location.href;
+            scraperTaskChannel.sendResponse(port, res);
+        };
 
         scraperTaskChannel.onRequest(port, (msg) => {
             const { scraper } = msg;
