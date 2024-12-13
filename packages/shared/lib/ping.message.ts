@@ -3,6 +3,7 @@ import type { IMessageWithPayload } from './messages';
 export enum PingSignalKeyEnum {
     PopupShowed = 'popup_showed',
     DrillDownColumnFormShowed = 'drill_down_column_form_showed',
+    ScraperFormShowed = 'scraper_form_showed',
 }
 
 export const pingSignalMessageType = 'ping_signal' as const;
@@ -11,7 +12,7 @@ export type PingSignalMessage = IMessageWithPayload<typeof pingSignalMessageType
 
 const signalIntervals = {
     ping: 500,
-    clearPing: 1000,
+    clearPing: 1500,
 };
 
 export function listenPingSignal(signalKey: PingSignalKeyEnum, callback: () => void) {

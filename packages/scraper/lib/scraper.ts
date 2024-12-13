@@ -61,7 +61,7 @@ export interface IScraper {
     mode: AutoExtractionMode;
     config?: AutoExtractionConfig;
     columns: IScraperColumn[];
-    createAt: number;
+    createAt?: number;
     updateAt?: number;
 }
 

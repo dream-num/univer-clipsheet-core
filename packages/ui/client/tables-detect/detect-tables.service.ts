@@ -108,20 +108,22 @@ export class DetectTablesService {
 
                     if (rect.width <= 0
                     || rect.height <= 0
-                    || !element.checkVisibility({ opacityProperty: true, visibilityProperty: true } as unknown as { checkOpacity: boolean; visibilityProperty: boolean })
+                    || !element.checkVisibility({ opacityProperty: true, visibilityProperty: true } as any)
                     || element instanceof HTMLSelectElement) {
                         return false;
                     }
 
-                    const rows = getTableExtractionParamRows(table);
-                    console.log('average weight', table.weightedScore / rows);
+                    // const rows = getTableExtractionParamRows(table);
+                    // console.log('average weight', table.weightedScore / rows);
 
-                    if (table.weightedScore < 1000000) {
-                        return false;
-                    }
-                    return true;
+                    return table.weightedScore >= 1000000;
                 })
-                .sort((a, b) => b.weightedScore - a.weightedScore);
+                .sort((a, b) => {
+                    const aAverageWeight = a.weightedScore / getTableExtractionParamRows(a);
+                    const bAverageWeight = b.weightedScore / getTableExtractionParamRows(b);
+                    return bAverageWeight - aAverageWeight;
+                    // return b.weightedScore - a.weightedScore
+                });
 
             detectedTables.forEach((table) => {
                 this._tableMap.set(generateRandomId(), table);

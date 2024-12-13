@@ -33,14 +33,15 @@ export enum IframeViewTypeEnum {
 export type ClientScrapAllTablesMessage = IMessage<ClientMessageTypeEnum.ScrapAllTables>;
 export type UIPopupShowedMessage = IMessage<UIMessageTypeEnum.PopupShowed>;
 export type UIOpenTableScrapingDialogMessage = IMessage<UIMessageTypeEnum.OpenTableScrapingDialog>;
+
 export type SetIframeViewMessage = SetStorageMessage<IframeViewTypeEnum, UIStorageKeyEnum.IframeView>;
 
-export function sendSetIframeViewMessage(key: IframeViewTypeEnum) {
+export function sendSetIframeViewMessage(view: IframeViewTypeEnum) {
     const msg: SetIframeViewMessage = {
         type: ClipsheetMessageTypeEnum.SetStorage,
         payload: {
             key: UIStorageKeyEnum.IframeView,
-            value: key,
+            value: view,
         },
     };
 

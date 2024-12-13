@@ -62,7 +62,7 @@ export class ElementInspectShadowComponent extends ShadowComponent {
         if (!_target) {
             return;
         }
-        console.log('ElementInspectShadowComponent.logMouseMovement', _target);
+
         const target = _target as HTMLElement;
 
         if (target === this.iframeCover.cover) {

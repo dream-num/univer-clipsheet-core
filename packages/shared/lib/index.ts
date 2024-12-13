@@ -10,3 +10,4 @@ export * from './channel';
 export * from './services/storage-service';
 export * from './services/side-panel.service';
 export * from './utils';
+export { ObjectValidator, type IObjectValidatorInit } from './object-validator';

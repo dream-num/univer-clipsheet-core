@@ -2,8 +2,8 @@ import type { IGetScraperListParams, IScraper, IScraperColumn } from '@univer-cl
 import { ScraperDataSourceKeyEnum } from '@univer-clipsheet-core/scraper';
 import type { GetDataSourceMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, closePopup, generateRandomId, IframeViewTypeEnum, promisifyMessage, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
-import type { ITableRecord } from '@univer-clipsheet-core/table';
-import { TableRecordTypeEnum } from '@univer-clipsheet-core/table';
+import type { IInitialSheet, ITableRecord } from '@univer-clipsheet-core/table';
+import { TableRecordTypeEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { IGetWorkflowListParams, IWorkflow, IWorkflowColumn } from '@univer-clipsheet-core/workflow';
 import { WorkflowDataSourceKeyEnum, WorkflowStorageKeyEnum } from '@univer-clipsheet-core/workflow';
 
@@ -83,4 +83,19 @@ export function openWorkflowDialog(workflow?: Partial<IWorkflow>) {
         },
     });
     closePopup();
+}
+
+export function openPreviewTablePanel(sheet: IInitialSheet, from: string) {
+    chrome.runtime.sendMessage({
+        type: ClipsheetMessageTypeEnum.SetStorage,
+        payload: {
+            key: TableStorageKeyEnum.PreviewSheet,
+            value: {
+                sheet,
+                from,
+            },
+        },
+    });
+
+    sendSetIframeViewMessage(IframeViewTypeEnum.PreviewTablePanel);
 }

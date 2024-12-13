@@ -1,6 +1,6 @@
 
 import type { IScraper } from '@lib/scraper';
-import { getStorage, setStorage } from '@univer-clipsheet-core/shared';
+import { generateRandomId, getStorage, setStorage } from '@univer-clipsheet-core/shared';
 import { createIdentifier } from '@wendellhu/redi';
 import type { IGetScraperListParams } from './scraper.message';
 import { ScraperStorageKeyEnum } from './scraper.message';
@@ -27,6 +27,11 @@ export class LocaleScraperDataSource implements IScraperDataSource {
     }
 
     async add(scraper: IScraper): Promise<IScraper> {
+        if (!scraper.id) {
+            scraper.id = generateRandomId();
+        }
+
+        scraper.createAt = Date.now() / 1000;
         const scraperList = await getStorageScraperList();
         const newScraperList = [scraper].concat(scraperList);
         await setStorage(ScraperStorageKeyEnum.ScraperList, newScraperList);

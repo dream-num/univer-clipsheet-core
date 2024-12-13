@@ -23,6 +23,7 @@ export enum ScraperMessageTypeEnum {
     CreateScraper = 'create_scraper',
     UpdateScraper = 'update_scraper',
     RunScraperFailed = 'run_scraper_failed',
+    PreviewScraperTable = 'preview_scraper_table',
 }
 
 export type RunScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.RunScraper, IScraper>;
@@ -41,4 +42,15 @@ export type StopScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.Stop
 export type DeleteScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.DeleteScraper, string>;
 
 export type RunScraperFailedMessage = IMessageWithPayload<ScraperMessageTypeEnum.RunScraperFailed, IScraper>;
+export type PreviewScraperTableMessage = IMessageWithPayload<ScraperMessageTypeEnum.PreviewScraperTable, {
+    selector: string;
+    columnNames: string[];
+}>;
 
+export function sendCreateScraperMessage(payload: CreateScraperMessage['payload']) {
+    const msg: CreateScraperMessage = {
+        type: ScraperMessageTypeEnum.CreateScraper,
+        payload,
+    };
+    chrome.runtime.sendMessage(msg);
+}

@@ -35,6 +35,17 @@ export enum TableStorageKeyEnum {
     PreviewSheet = 'preview_sheet',
 }
 
+export enum PreviewSheetFromEnum {
+    TableScrapingDialog = 'table_scraping_dialog',
+    ScraperForm = 'scraper_form',
+}
+
+export interface IPreviewSheetStorageValue {
+    sheet: IInitialSheet;
+    hiddenColumnIndexes?: number[];
+    from: PreviewSheetFromEnum;
+}
+
 // Table Messages
 export type ScrapTablesMessage = IMessageWithPayload<TableMessageTypeEnum.ScrapTables, {
     text: string;

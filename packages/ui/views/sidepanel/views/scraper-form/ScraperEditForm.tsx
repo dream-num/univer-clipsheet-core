@@ -2,26 +2,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 
-import dayjs from 'dayjs';
-import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
-import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
-import { t } from '@univer-clipsheet-core/locale';
-import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
-import { closeSidePanel, getActiveTab } from '@univer-clipsheet-core/shared';
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';
+import { t } from '@univer-clipsheet-core/locale';
+import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
+import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
+import { closeSidePanel, getActiveTab } from '@univer-clipsheet-core/shared';
+import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
+import { Sheet_Cell_Type_Enum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import dayjs from 'dayjs';
+import { useStorageValue } from '@lib/hooks';
 import { useSidePanelContext } from '../../context';
 import { setStorageScraperData, submitValidate } from './common';
+import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionForm, ScrollAutoExtractionForm } from './components/auto-extraction-form';
 import type { IEditColumnDialogRef } from './components/EditColumnDialog';
 import { EditColumnDialog } from './components/EditColumnDialog';
+import { PreviewTableButton } from './components/PreviewTableButton';
 import type { IScraperTableProps, UnionColumn } from './ScraperTable';
 import { isDrillDownColumn, ScraperTable } from './ScraperTable';
-import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionForm, ScrollAutoExtractionForm } from './components/auto-extraction-form';
+import type { IScraperFormProps } from './ScraperForm';
+import { useAutoExtractionForm } from './hooks';
 
 export interface IScraperEditFormProps {
     readonly?: boolean;
     data: IScraper;
-    onColumnEdit?: (column: IScraperColumn) => void;
+    onColumnEdit?: IScraperFormProps['onColumnEdit'];
 }
 
 export const ScraperEditForm = (props: IScraperEditFormProps) => {
@@ -40,26 +45,19 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
         });
     }
 
-    const [autoExtractionMode, setAutoExtractionMode] = useState(scraperData.mode);
+    const {
+        autoExtractionMode,
+        setAutoExtractionMode,
 
-    const [scrollConfig, setScrollConfig] = useState<IScrollAutoExtractionConfig>(scraperData.mode === AutoExtractionMode.Scroll ? scraperData.config as IScrollAutoExtractionConfig : { minInterval: 3, maxInterval: 6 });
-    const [clickConfig, setClickConfig] = useState<IClickAutoExtractionConfig>(scraperData.mode === AutoExtractionMode.Click ? scraperData.config as IClickAutoExtractionConfig : { minInterval: 3, maxInterval: 6, buttonSelector: '' });
-    const [pageUrlConfig, setPageUrlConfig] = useState<IPageUrlAutoExtractionConfig>(scraperData.mode === AutoExtractionMode.PageUrl ? scraperData.config as IPageUrlAutoExtractionConfig : { startPage: 1, endPage: 10, templateUrl: '' });
+        scrollConfig,
+        setScrollConfig,
 
-    useEffect(() => {
-        setAutoExtractionMode(scraperData.mode);
-        switch (scraperData.mode) {
-            case AutoExtractionMode.Scroll:
-                setScrollConfig(scraperData.config as IScrollAutoExtractionConfig);
-                break;
-            case AutoExtractionMode.Click:
-                setClickConfig(scraperData.config as IClickAutoExtractionConfig);
-                break;
-            case AutoExtractionMode.PageUrl:
-                setPageUrlConfig(scraperData.config as IPageUrlAutoExtractionConfig);
-                break;
-        }
-    }, [scraperData]);
+        clickConfig,
+        setClickConfig,
+
+        pageUrlConfig,
+        setPageUrlConfig,
+    } = useAutoExtractionForm(scraperData);
 
     const tabs = [
         {
@@ -117,13 +115,11 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
         },
     ];
 
-    const [deletedIds, setDeletedIds] = useState<string[]>([]);
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
     const data = useMemo(() => {
         // Filter deleted columns and collapse drill down columns
         const innerColumns: UnionColumn[] = scraperData.columns
-            .filter((c) => !deletedIds.includes(c.id))
             .reduce((acc, column) => {
                 if (column.type !== Sheet_Cell_Type_Enum.URL) {
                     return acc.concat(column);
@@ -136,22 +132,9 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             }, [] as UnionColumn[]);
 
         return innerColumns;
-    }, [deletedIds, expandedIds, scraperData.columns]);
+    }, [expandedIds, scraperData.columns]);
 
-    const getFilteredColumns = () => {
-        return scraperData.columns.filter((c) => !deletedIds.includes(c.id));
-    };
-
-    const handleSaveScraper = () => {
-        const filteredColumns = getFilteredColumns();
-        const validation = submitValidate({ name: scraperData.name, columns: filteredColumns }, (msg) => message?.showMessage({
-            type: 'error',
-            text: msg,
-        }));
-        if (!validation) {
-            return;
-        }
-
+    const getCurrentScraper = () => {
         function getScraperConfig() {
             if (autoExtractionMode === AutoExtractionMode.Scroll) {
                 return scrollConfig;
@@ -165,36 +148,48 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             return undefined;
         }
 
+        return {
+            ...scraperData,
+            columns: scraperData.columns,
+            mode: autoExtractionMode,
+            config: getScraperConfig(),
+        };
+    };
+
+    const handleSaveScraper = () => {
+        const filteredColumns = scraperData.columns;
+        const validation = submitValidate({ name: scraperData.name, columns: filteredColumns }, (msg) => message?.showMessage({
+            type: 'error',
+            text: msg,
+        }));
+
+        if (!validation) {
+            return;
+        }
+
         const msg: UpdateScraperMessage = {
             type: ScraperMessageTypeEnum.UpdateScraper,
             payload: {
                 toRun: toRunRef.current,
-                scraper: {
-                    ...scraperData,
-                    columns: filteredColumns,
-                    mode: autoExtractionMode,
-                    config: getScraperConfig(),
-                },
+                scraper: getCurrentScraper(),
             },
 
         };
 
         chrome.runtime.sendMessage(msg);
 
-        const duration = 2000;
         message?.showMessage({
             type: 'success',
             text: t('ScraperSavedSuccessfully'),
-            duration,
+            duration: 2000,
+            onClose: () => {
+                getActiveTab().then((tab) => {
+                    if (tab.id) {
+                        closeSidePanel(tab.id);
+                    }
+                });
+            },
         });
-
-        setTimeout(() => {
-            getActiveTab().then((tab) => {
-                if (tab.id) {
-                    closeSidePanel(tab.id);
-                }
-            });
-        }, duration);
     };
 
     const [name, setName] = useState(scraperData.name);
@@ -205,8 +200,8 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
                 setStorageScraperData({
-                    ...scraperData,
-                    columns: scraperData.columns.map((c) => {
+                    ...scraperDataRef.current,
+                    columns: scraperDataRef.current.columns.map((c) => {
                         if (c.drillDownConfig) {
                             c.drillDownConfig.columns = c.drillDownConfig.columns.filter((d) => d.id !== column.id);
                         }
@@ -215,7 +210,11 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
                     }),
                 });
             } else {
-                setDeletedIds((ids) => ids.concat([column.id]));
+                setStorageScraperData({
+                    ...scraperDataRef.current,
+                    columns: scraperDataRef.current.columns.filter((c) => c.id !== column.id),
+                });
+                // setDeletedIds((ids) => ids.concat([column.id]));
             }
         },
         onEdit: (column) => {
@@ -298,14 +297,17 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             </section>
             <section>
                 <div className="py-3  flex justify-between">
-                    <div className="text-gray-900 text-sm mb-2">{t('ConfigurationFieldForTable')}</div>
+                    <div>
+                        <span className="text-gray-900 text-sm mb-2">{t('FieldsForTable')}</span>
+                        <PreviewTableButton scraper={scraperData} />
+                    </div>
                     <div>
                         <span className="text-[#2C53F1] text-sm font-medium mr-1">{data.length}</span>
                         <span className="text-[#5F6574] text-xs">{t('Columns').toLowerCase()}</span>
                     </div>
                 </div>
                 <ScraperTable
-                    onColumnDrillDownClick={onColumnEdit}
+                    onColumnDrillDownClick={(c) => onColumnEdit?.(c, getCurrentScraper())}
                     readonly={readonly}
                     expandedIds={expandedIds}
                     setExpandedIds={setExpandedIds}

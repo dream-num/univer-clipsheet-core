@@ -18,10 +18,19 @@ type GetFunction<T> = T extends Function ? T : never;
 export const InitialSheetView = (props: InitialSheetViewProps) => {
     const { className, sheet, scroll, rounded = false } = props;
 
+    const columnNames = useMemo(() => {
+        const columnLength = Math.max(sheet.columnName.length, sheet.rows[0]?.cells.length);
+
+        return Array.from({ length: columnLength }).map((_, columnIndex) => {
+            const title = sheet.columnName[columnIndex] || `Column ${columnIndex + 1}`;
+            return title;
+        });
+    }, [sheet]);
+
     const columns: TableProps['columns'] = useMemo(() => {
-        const _columns: Array<NonNullable<TableProps['columns']>[number]> = sheet.columnName.map((name, columnIndex) => {
+        const _columns: Array<NonNullable<TableProps['columns']>[number]> = columnNames.map((name, columnIndex) => {
             return {
-                title: <div className="px-2">{name}</div>,
+                title: <div className="px-2  line-clamp-3 text-ellipsis">{name}</div>,
                 className: 'border-r !border-[#cdd0d8]',
                 width: 200,
                 key: name,
@@ -51,7 +60,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
         });
 
         return _columns;
-    }, [sheet]);
+    }, [columnNames]);
 
     const rowKey: GetFunction<TableProps['rowKey']> = useCallback((_, i) => String(i), []);
     const onHeaderRow: GetFunction<TableProps['onHeaderRow']> = useCallback((record, index) => {

@@ -1,5 +1,5 @@
-import type { IframeViewTypeEnum, IMessage, PushStorageMessage, UIOpenTableScrapingDialogMessage } from '@univer-clipsheet-core/shared';
-import { ClientMessageTypeEnum, ClipsheetMessageTypeEnum, UIMessageTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import type { IMessage, PushStorageMessage, UIOpenTableScrapingDialogMessage } from '@univer-clipsheet-core/shared';
+import { ClientMessageTypeEnum, ClipsheetMessageTypeEnum, IframeViewTypeEnum, UIMessageTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { ScrapTablesMessage } from '@univer-clipsheet-core/table';
 import { TableMessageTypeEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
 import { Inject, Injector } from '@wendellhu/redi';
@@ -12,8 +12,22 @@ import { extractSheetsFromPage } from './tools';
 export class ClientController {
     constructor(
         @Inject(Injector) private _injector: Injector,
+        @Inject(TableScrapingShadowComponent) private _tableScrapingShadowComponent: TableScrapingShadowComponent,
         @Inject(IframeViewController) private _iframeViewController: IframeViewController
     ) {
+        this._tableScrapingShadowComponent.active$.subscribe((active) => {
+            if (active) {
+                if (![IframeViewTypeEnum.PreviewTablePanel, IframeViewTypeEnum.None].includes(this._iframeViewController.view)) {
+                    this._iframeViewController.setView(IframeViewTypeEnum.None);
+                }
+            }
+        });
+
+        this._iframeViewController.onViewChange((view) => {
+            if ([IframeViewTypeEnum.TablePanel, IframeViewTypeEnum.WorkflowPanel].includes(view)) {
+                this._tableScrapingShadowComponent.deactivate();
+            }
+        });
     }
 
     listenMessage() {
@@ -44,7 +58,9 @@ export class ClientController {
                 case ClipsheetMessageTypeEnum.PushStorage: {
                     const { payload } = msg;
                     if (payload.key === UIStorageKeyEnum.IframeView) {
-                        this._iframeViewController.setView(payload.value);
+                        const { _iframeViewController } = this;
+
+                        _iframeViewController.setView(payload.value);
                     }
 
                     break;

@@ -5,8 +5,15 @@ import '../tailwind.css';
 import clsx from 'clsx';
 import { ErrorSingleSvg, SuccessSingleSvg } from '../icons';
 
+export interface IShowMessageOption {
+    type: 'success' | 'error';
+    text: string;
+    duration?: number;
+    onClose?: () => void;
+}
+
 export interface IMessageRef {
-    showMessage(option: { type: 'success' | 'error'; text: string; duration?: number }): void;
+    showMessage(option: IShowMessageOption): void;
 }
 
 export interface IMessageProps {
@@ -19,9 +26,13 @@ export const Message = forwardRef<IMessageRef, IMessageProps>((props, ref) => {
     const [text, setText] = useState<string | null>(null);
     const [visible, setVisible] = useState(false);
     const elRef = useRef<HTMLDivElement>(null);
+    const onCloseRef = useRef<() => void>();
     const animationHide = useCallback(() => {
         elRef.current?.classList.add('out');
+
         setTimeout(() => {
+            onCloseRef.current?.();
+
             setVisible(false);
         }, 300);
     }, []);
@@ -33,6 +44,7 @@ export const Message = forwardRef<IMessageRef, IMessageProps>((props, ref) => {
             setText(text);
             setVisible(true);
             setTimeout(animationHide, duration);
+            onCloseRef.current = option.onClose;
         },
     }));
 

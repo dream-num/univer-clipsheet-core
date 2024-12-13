@@ -7,5 +7,5 @@ export interface IframeContainerProps {
 }
 
 export const PreviewPanelContainer = (props: IframeContainerProps) => {
-    return <IframeContainer iframeSrc$={props.iframeSrc$} />;
+    return <IframeContainer className="iframe-container" iframeSrc$={props.iframeSrc$} />;
 };

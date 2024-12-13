@@ -1,2 +1,2 @@
 
-export { ScraperClientChannelService } from './scraper-client-channel.service';
+export { ScraperClientService } from './scraper-client.service';

@@ -1,13 +1,9 @@
 import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
 import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
-import { createLazyLoadElement, findElementBySelector, getTableApproximationByElement } from '@univer-clipsheet-core/table';
+import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
-
-function scrollToBottom() {
-    window.scrollTo(0, document.body.scrollHeight);
-}
 
 function intervalUntil(duration: number, interval: number, callbacks: {
     onInterval: () => void;

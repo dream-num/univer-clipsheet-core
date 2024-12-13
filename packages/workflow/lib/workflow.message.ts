@@ -39,3 +39,11 @@ export type UpdateWorkflowMessage = IMessageWithPayload<WorkflowMessageTypeEnum.
     workflow: IWorkflow;
     toRun?: boolean;
 }>;
+
+export function sendCreateWorkflowMessage(payload: CreateWorkflowMessage['payload']) {
+    const msg: CreateWorkflowMessage = {
+        type: WorkflowMessageTypeEnum.CreateWorkflow,
+        payload,
+    };
+    chrome.runtime.sendMessage(msg);
+}

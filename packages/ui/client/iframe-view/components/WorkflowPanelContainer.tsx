@@ -29,5 +29,5 @@ export const WorkflowPanelContainer = (props: IframeContainerProps) => {
     const roundedWidth = roundToEven(rect.width);
     const roundedHeight = roundToEven(rect.height);
 
-    return <IframeContainer ref={containerRef} iframeSrc$={iframeSrc$} style={{ width: `${roundedWidth}px`, height: `${roundedHeight}px` }} />;
+    return <IframeContainer className="iframe-container" ref={containerRef} iframeSrc$={iframeSrc$} style={{ width: `${roundedWidth}px`, height: `${roundedHeight}px` }} />;
 };

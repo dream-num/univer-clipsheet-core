@@ -1,21 +1,23 @@
-import { useObservableValue } from '@lib/hooks';
+import { ClientViewService } from '@client/client-view.service';
+import { useElementInspect } from '@client/components/hooks';
+import { ElementInspectService } from '@client/element-inspect';
+import { IframeViewController } from '@client/iframe-view';
+import { RemountObserver } from '@client/remount-observer';
+import { isSameSize, lookForParent } from '@client/tools';
+import { CloseSingleDarkSvg, ErrorSingleSvg, EyelashSvg, EyeSvg, LoadingSvg, SuccessSingleSvg } from '@components/icons';
+import { openPreviewTablePanel } from '@lib/helper';
+import { useObservableValue, useStorageValue } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
-import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
-import { findApproximationTable, getDrillDownSelector, getElementAccurateExtractionRows, getEspecialConfig, getTableApproximationByElement, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
+import { getDrillDownSelector, getElementAccurateExtractionRows, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDraggable from 'react-draggable';
-import { CloseSingleDarkSvg, ErrorSingleSvg, LoadingSvg, SuccessSingleSvg } from '@components/icons';
-import { useElementInspect } from '@client/components/hooks';
-import { isSameSize, lookForParent } from '@client/tools';
-import { ClientViewService } from '@client/client-view.service';
-import { ElementInspectService } from '@client/element-inspect';
-import { RemountObserver } from '@client/remount-observer';
 import { TableScrapingShadowComponent, ViewState } from '../table-scraping-shadow-component';
-import { TableElementExtractor, TableLikeElementExtractor } from '../extractors';
 
 function disposeAccurateExtraction(injector: Injector) {
     const elementInspectService = injector.get(ElementInspectService);
@@ -46,6 +48,11 @@ function getIcon(viewState: ViewState, className: string) {
         }
     }
 }
+
+const TextButton = (props: React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>) => {
+    const { className, ...restProps } = props;
+    return <button {...restProps} className={clsx('btn cs-text-btn', className)} />;
+};
 
 function PreviewSelectionFooter(props: {
     disabled?: boolean;
@@ -110,10 +117,16 @@ function ScrapingFooter(props: {
     return (
         <div className="cs-panel-footer" id="extract-footer">
             <div>
-                <button className="btn cs-text-btn" id="reselect-btn" onClick={onReselect}>{t('Reselect')}</button>
+                <TextButton onClick={onReselect}>{t('Reselect')}</TextButton>
             </div>
             <div className="cs-flex cs-items-center">
-                <button className="btn cs-default-btn cs-inline-flex cs-items-center" onClick={onCreateScraper}>
+                <button
+                    className={clsx('btn cs-default-btn cs-inline-flex cs-items-center', {
+                        'btn--disabled': disabled,
+                    })}
+                    disabled={disabled}
+                    onClick={onCreateScraper}
+                >
                     <span>{t('CreateScraper')}</span>
                 </button>
                 <button
@@ -122,6 +135,7 @@ function ScrapingFooter(props: {
                     })}
                     id="confirm-btn"
                     onClick={onConfirm}
+                    disabled={disabled}
                 >
                     {t('Confirm')}
                 </button>
@@ -155,11 +169,11 @@ export const TableScrapingDialog = (props: {
     const tableScrapingShadowComponent = useMemo(() => injector.get(TableScrapingShadowComponent), [injector]);
     const elementInspectService = useMemo(() => injector.get(ElementInspectService), [injector]);
     const clientViewService = useMemo(() => injector.get(ClientViewService), [injector]);
+    const iframeViewController = useMemo(() => injector.get(IframeViewController), [injector]);
 
     const [viewState, setViewState] = useObservableValue<ViewState>(tableScrapingShadowComponent.viewState$);
     const selectableViewStates = useMemo(() => [ViewState.Selecting, ViewState.NoData], []);
     const [content, setContent] = useState('');
-    // const [tableLink] = useObservableValue(clientViewService.tableLink$);
     const iframeUrlRef = React.useRef<string | null>(null);
     const isShowIcon = shouldShowIcon(viewState);
 
@@ -200,6 +214,25 @@ export const TableScrapingDialog = (props: {
 
         setContent(getContentHtml());
     }, [viewState, rowsCount]);
+
+    useEffect(() => {
+        const disposes = [
+            tableScrapingShadowComponent.active$.subscribe((active) => {
+                if (!active && iframeViewController.view === IframeViewTypeEnum.PreviewTablePanel) {
+                    sendSetIframeViewMessage(IframeViewTypeEnum.None);
+                }
+            }),
+            tableScrapingShadowComponent.viewState$.subscribe((state) => {
+                if (state !== ViewState.ConfirmSelection && iframeViewController.view === IframeViewTypeEnum.PreviewTablePanel) {
+                    sendSetIframeViewMessage(IframeViewTypeEnum.None);
+                }
+            }),
+        ];
+
+        return () => {
+            disposes.forEach((dispose) => dispose());
+        };
+    }, [tableScrapingShadowComponent]);
 
     useEffect(() => {
         let dispose: () => void;
@@ -246,8 +279,6 @@ export const TableScrapingDialog = (props: {
         });
 
         const inspectedElement = resolvedElement ?? element;
-
-        // console.log('inspectedElement', inspectedElement);
 
         tableScrapingShadowComponent.inspectElement(inspectedElement);
     }, [viewState]);
@@ -330,6 +361,70 @@ export const TableScrapingDialog = (props: {
         extractorTarget && tableScrapingShadowComponent.highlightCover.attach(extractorTarget);
     };
 
+    const [previewSheet, setPreviewSheet] = useStorageValue<IPreviewSheetStorageValue | null>(TableStorageKeyEnum.PreviewSheet, null);
+
+    const previewing = iframeViewController.view === IframeViewTypeEnum.PreviewTablePanel && previewSheet?.from === PreviewSheetFromEnum.TableScrapingDialog;
+
+    const handlePreviewTable = () => {
+        if (previewing) {
+            sendSetIframeViewMessage(IframeViewTypeEnum.None);
+            setPreviewSheet(null);
+        } else {
+            const sheet = tableScrapingShadowComponent.getSheets()[0];
+
+            if (sheet) {
+                openPreviewTablePanel(sheet, PreviewSheetFromEnum.TableScrapingDialog);
+            }
+        }
+    };
+
+    const footer = (() => {
+        switch (viewState) {
+            case ViewState.PreviewSelection: {
+                return (
+                    <>
+                        <PreviewSelectionFooter upperDisabled={upperDisabled} onUpper={handleUpper} onConfirm={handlePreviewSelection} disabled={(extractor?.elementRows ?? 0) <= 0} />
+                        <footer className="cs-extra-footer">
+                            <input checked={isGrandchild} onChange={handleLowerLevel} className="cs-checkbox" id="cs-lower-level-checkbox" type="checkbox" />
+                            <label className="cs-checkbox-label cs-cursor-pointer" htmlFor="cs-lower-level-checkbox">{t('CollectLowerLevelNodes')}</label>
+                        </footer>
+                    </>
+                );
+            }
+            case ViewState.ConfirmSelection: {
+                return (
+                    <ScrapingFooter
+                        onCreateScraper={handleCreateScraper}
+                        onReselect={handleReselect}
+                        onConfirm={() => {
+                            captureEvent('clipsheet_accurate_extraction_confirm', {
+                                url: location.href,
+                            });
+                            scrapSelectedTable();
+                        }}
+                        disabled={rowsCount <= 0}
+                    />
+                );
+            }
+            case ViewState.Error : {
+                return (
+                    <ErrorFooter
+                        onRetry={() => {
+                            captureEvent('clipsheet_accurate_extraction_retry', {
+                                url: location.href,
+                            });
+                            scrapSelectedTable();
+                        }}
+                        onCancel={handleClose}
+                    />
+                );
+            }
+            default: {
+                return null;
+            }
+        }
+    })();
+
     return (
         <ReactDraggable axis="both" onStart={() => elementInspectService.shadowComponent.activate()} onStop={() => elementInspectService.shadowComponent.deactivate()}>
             <div className="cs-panel" ref={panelRef}>
@@ -362,44 +457,24 @@ export const TableScrapingDialog = (props: {
                             )
                             : (
                                 <div>
-                                    <div dangerouslySetInnerHTML={{ __html: content }}></div>
+
+                                    <div>
+                                        <span dangerouslySetInnerHTML={{ __html: content }}></span>
+                                        {viewState === ViewState.ConfirmSelection
+                                        && (
+                                            <TextButton className="cs-inline-flex cs-items-center" onClick={handlePreviewTable}>
+                                                {previewing ? <EyelashSvg /> : <EyeSvg />}
+                                                <span className="cs-ml-0.5">
+                                                    {t(previewing ? 'HideView' : 'ViewTable')}
+                                                </span>
+                                            </TextButton>
+                                        )}
+                                    </div>
                                     {(viewState === ViewState.Success) && <div className="cs-success-footer"><span className="cs-active-color cs-underline cs-cursor-pointer" onClick={clientViewService.triggerViewScrapedDataClick}>{t('ViewScrapedTableData')}</span></div>}
                                 </div>
                             )}
                     </div>
-                    {viewState === ViewState.PreviewSelection && (
-                        <>
-                            <PreviewSelectionFooter upperDisabled={upperDisabled} onUpper={handleUpper} onConfirm={handlePreviewSelection} disabled={(extractor?.elementRows ?? 0) <= 0} />
-                            <footer className="cs-extra-footer">
-                                <input checked={isGrandchild} onChange={handleLowerLevel} className="cs-checkbox" id="cs-lower-level-checkbox" type="checkbox" />
-                                <label className="cs-checkbox-label cs-cursor-pointer" htmlFor="cs-lower-level-checkbox">{t('CollectLowerLevelNodes')}</label>
-                            </footer>
-                        </>
-                    )}
-                    {viewState === ViewState.ConfirmSelection && (
-                        <ScrapingFooter
-                            onCreateScraper={handleCreateScraper}
-                            onReselect={handleReselect}
-                            onConfirm={() => {
-                                captureEvent('clipsheet_accurate_extraction_confirm', {
-                                    url: location.href,
-                                });
-                                scrapSelectedTable();
-                            }}
-                            disabled={rowsCount <= 0}
-                        />
-                    )}
-                    {viewState === ViewState.Error && (
-                        <ErrorFooter
-                            onRetry={() => {
-                                captureEvent('clipsheet_accurate_extraction_retry', {
-                                    url: location.href,
-                                });
-                                scrapSelectedTable();
-                            }}
-                            onCancel={handleClose}
-                        />
-                    )}
+                    {footer}
                 </div>
             </div>
         </ReactDraggable>

@@ -1,5 +1,5 @@
 import type { DropdownMenuItem } from '@components/DropdownMenu';
-import { DropdownMenu, HoverDropdownMenu } from '@components/DropdownMenu';
+import { DropdownMenu } from '@components/DropdownMenu';
 import { MoreButton } from '@components/MoreButton';
 import { separateLineMenu } from '@components/PopupMenus';
 import { Table } from '@components/table/Table';
@@ -10,7 +10,7 @@ import { useDataSource, useImmediateDataSource } from '@lib/hooks';
 import type { Translator } from '@univer-clipsheet-core/locale';
 import { t } from '@univer-clipsheet-core/locale';
 import type { DeleteScraperMessage, IGetScraperListParams, IScraper, RunScraperFailedMessage, RunScraperMessage, StopScraperMessage } from '@univer-clipsheet-core/scraper';
-import { AutoExtractionMode, ScraperDataSourceKeyEnum, ScraperMessageTypeEnum, ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
+import { AutoExtractionMode, ScraperDataSourceKeyEnum, scraperIOHelper, ScraperMessageTypeEnum, ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
 import type {
     OpenSidePanelMessage,
     SetStorageMessage,
@@ -27,6 +27,7 @@ import { usePopupContext } from '@views/popup/context';
 import type { TableProps } from 'rc-table';
 import { useEffect, useMemo } from 'react';
 import { openWorkflowDialog } from '@lib/helper';
+import { saveAs } from 'file-saver';
 
 const ScraperGearSvg = () => {
     return (
@@ -85,10 +86,11 @@ const ScraperTableEmpty = (props: {
     );
 };
 
-enum MoreMenu {
+enum EditMenuKey {
     Edit = 'edit',
     Schedule = 'schedule',
     Delete = 'delete',
+    Export = 'export',
 }
 
 enum RunMenu {
@@ -108,7 +110,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
     const { state: runningScraperIds = [] } = useImmediateDataSource<string[]>(ScraperDataSourceKeyEnum.RunningScraperIds);
 
     const { state: innerData = [], getState: getInnerData, loading } = useDataSource<IScraper[], IGetScraperListParams>(ScraperDataSourceKeyEnum.ScraperList);
-    // console.log(innerData, 'IScraper');
+
     useEffect(() => {
         getInnerData({
             pageSize: defaultPageSize,
@@ -219,16 +221,20 @@ export const ScraperTable = (props: IScraperTableProps) => {
             const menus: DropdownMenuItem[] = [
                 {
                     text: t('Edit'),
-                    key: MoreMenu.Edit,
+                    key: EditMenuKey.Edit,
+                },
+                {
+                    text: t('Export'),
+                    key: EditMenuKey.Export,
                 },
                 {
                     text: t('ScheduleTheWorkflow'),
-                    key: MoreMenu.Schedule,
+                    key: EditMenuKey.Schedule,
                 },
                 separateLineMenu,
                 {
                     text: <span className="text-[#F05252]">{t('Delete')}</span>,
-                    key: MoreMenu.Delete,
+                    key: EditMenuKey.Delete,
                 },
             ].filter(Boolean) as DropdownMenuItem[];
 
@@ -238,7 +244,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                         placement="bottomRight"
                         menus={menus}
                         onChange={async (key) => {
-                            if (key === MoreMenu.Delete) {
+                            if (key === EditMenuKey.Delete) {
                                 const msg: DeleteScraperMessage = {
                                     type: ScraperMessageTypeEnum.DeleteScraper,
                                     payload: record.id,
@@ -246,7 +252,13 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                 chrome.runtime.sendMessage(msg);
                             }
 
-                            if (key === MoreMenu.Edit) {
+                            if (key === EditMenuKey.Export) {
+                                const jsonBlob = new Blob([scraperIOHelper.toJSON(record)], { type: 'application/json' });
+
+                                saveAs(jsonBlob, `scraper_${record.name}.json`);
+                            }
+
+                            if (key === EditMenuKey.Edit) {
                                 const tabId = await getActiveTabId();
                                 if (!tabId) {
                                     return;
@@ -270,7 +282,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                 closePopup();
                             }
 
-                            if (key === MoreMenu.Schedule) {
+                            if (key === EditMenuKey.Schedule) {
                                 openWorkflowDialog({
                                     scraperSettings: [createScraperSetting(record)],
                                     columns: record.columns.map((column) => ({

@@ -11,6 +11,7 @@ import {
     minuteOptions,
     TimerRepeatMode,
     WorkflowDataSourceKeyEnum,
+    workflowIOHelper,
     WorkflowMessageTypeEnum,
 } from '@univer-clipsheet-core/workflow';
 import type { TableProps } from 'rc-table';
@@ -25,6 +26,7 @@ import { t } from '@univer-clipsheet-core/locale';
 import { defaultPageSize } from '@univer-clipsheet-core/shared';
 import { usePopupContext } from '@views/popup/context';
 import { openWorkflowDialog } from '@lib/helper';
+import { saveAs } from 'file-saver';
 
 const WorkflowTableEmptySvg = () => {
     return (
@@ -102,6 +104,7 @@ const WorkflowTableEmpty = (props: {
 enum EditMenuKey {
     Edit = 'edit',
     Delete = 'delete',
+    Export = 'export',
 }
 
 const scheduleModeTextMap = {
@@ -191,11 +194,15 @@ export const WorkflowTable = () => {
                 </div>
             );
         } },
-        { title: <div className="text-center">{t('More')}</div>, width: 68, render: (value, record, index) => {
+        { title: <div className="text-center">{t('More')}</div>, width: 68, render: (value, record: IWorkflow, index) => {
             const menus: DropdownMenuItem[] = [
                 {
                     text: t('Edit'),
                     key: EditMenuKey.Edit,
+                },
+                {
+                    text: t('Export'),
+                    key: EditMenuKey.Export,
                 },
                 separateLineMenu,
                 {
@@ -209,7 +216,7 @@ export const WorkflowTable = () => {
                     <DropdownMenu
                         placement="bottomRight"
                         menus={menus}
-                        onChange={(key) => {
+                        onChange={async (key) => {
                             if (key === EditMenuKey.Delete) {
                                 chrome.runtime.sendMessage({
                                     type: WorkflowMessageTypeEnum.DeleteWorkflow,
@@ -219,6 +226,13 @@ export const WorkflowTable = () => {
 
                             if (key === EditMenuKey.Edit) {
                                 openWorkflowDialog(record);
+                            }
+
+                            if (key === EditMenuKey.Export) {
+                                const workflowStr = await workflowIOHelper.toJSON(record);
+                                const jsonBlob = new Blob([workflowStr], { type: 'application/json' });
+
+                                saveAs(jsonBlob, `scraper_${record.name}.json`);
                             }
                         }}
                     >

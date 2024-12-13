@@ -5,11 +5,15 @@ import type {
 import {
     captureEvent,
     closePopup,
+    closeSidePanel,
     getActiveTab,
     pingSignal,
     PingSignalKeyEnum,
     UIMessageTypeEnum,
 } from '@univer-clipsheet-core/shared';
+import { readFileContent, Upload } from '@components/Upload';
+import type { CreateScraperMessage } from '@univer-clipsheet-core/scraper';
+import { createScraper, scraperIOHelper, ScraperMessageTypeEnum, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
 import type { IMessageRef } from '@components/message';
 import { Message as MessageComponent } from '@components/message';
 import { SearchInput } from '@components/SearchInput';
@@ -21,10 +25,12 @@ import {
     ScraperSvg,
     ToolsSvg,
     UniverLogoSvg,
+    UploadSvg,
     WorkflowSvg,
 } from '@components/icons';
 import { t } from '@univer-clipsheet-core/locale';
 import { useThrottle } from '@lib/hooks';
+import { Tooltip } from '@components/tooltip';
 import type { IPopupContext } from './context';
 import { PopupContext } from './context';
 import type { ICollectDataFooterRef } from './views/collect-data-tab';
@@ -33,8 +39,10 @@ import { ScraperTable } from './views/scraper-tab';
 import { ToolsTab } from './views/ToolsTab';
 import { WorkflowFooter, WorkflowTable } from './views/workflow-tab';
 
-import '@views/popup/Popup.css';
 import type { PopupViewService } from './popup-view.service';
+
+import '@views/popup/Popup.css';
+import { IWorkflow, sendCreateWorkflowMessage, workflowIOHelper } from '@univer-clipsheet-core/workflow';
 
 enum TabKeys {
     Data = 'data',
@@ -45,7 +53,7 @@ enum TabKeys {
 
 function Layout(props: {
     className?: string;
-    title: string;
+    title: React.ReactNode;
     headerSide: React.ReactNode;
     content: React.ReactNode;
     footer?: React.ReactNode;
@@ -158,6 +166,7 @@ function InnerPopup(props: IPopupProps) {
 
         chrome.tabs.sendMessage(tabId, message);
         closePopup();
+        closeSidePanel(tabId);
     }, []);
 
     const [searchInput, setSearchInput] = useState('');
@@ -176,12 +185,39 @@ function InnerPopup(props: IPopupProps) {
     const collectDataFooterRef = useRef<ICollectDataFooterRef>(null);
 
     const tabs = useMemo(() => {
-        const scrapSelectedTable = () => collectDataFooterRef.current?.scrapSelectedTable();
+        const scrapSelectedTable = () => {
+            collectDataFooterRef.current?.scrapSelectedTable();
+        };
 
         return [
             {
                 id: TabKeys.Scraper,
                 title: t('Scraper'),
+                titleAffix: (
+                    <Upload
+                        accept="application/json"
+                        onFileChange={async (file) => {
+                            const fileContent = await readFileContent(file);
+                            const scraper = scraperIOHelper.parse(fileContent);
+                            if (!scraper) {
+                                messageRef.current?.showMessage({
+                                    text: t('InvalidScraperFile'),
+                                    type: 'error',
+                                });
+                                return;
+                            }
+                            sendCreateScraperMessage({
+                                scraper,
+                            });
+                        }}
+                    >
+                        <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Scraper') })}</span>}>
+                            <button className="p-1 rounded ml-1 hover:bg-gray-100">
+                                <UploadSvg />
+                            </button>
+                        </Tooltip>
+                    </Upload>
+                ),
                 icon: <ScraperSvg />,
                 component: <ScraperTable onEmptyClick={scrapSelectedTable} />,
             },
@@ -194,6 +230,52 @@ function InnerPopup(props: IPopupProps) {
             {
                 id: TabKeys.Workflow,
                 title: t('Workflow'),
+                titleAffix: (
+                    <Upload
+                        accept="application/json"
+                        onFileChange={async (file) => {
+                            const fileContent = await readFileContent(file);
+                            const workflow = workflowIOHelper.parse(fileContent);
+
+                            if (!workflow) {
+                                messageRef.current?.showMessage({
+                                    text: t('InvalidWorkflowFile'),
+                                    type: 'error',
+                                });
+                                return;
+                            }
+
+                            const scrapers = workflow.__scrapers__.map((scraperLike) => scraperIOHelper.parse(scraperLike));
+
+                            if (scrapers.some((scraper) => !scraper)) {
+                                messageRef.current?.showMessage({
+                                    text: t('InvalidScraperFile'),
+                                    type: 'error',
+                                });
+                                return;
+                            }
+
+                            scrapers.forEach((scraper) => {
+                                sendCreateScraperMessage({
+                                    scraper,
+                                });
+                            });
+
+                            // @ts-ignore
+                            delete workflow.__scrapers__;
+
+                            sendCreateWorkflowMessage({
+                                workflow,
+                            });
+                        }}
+                    >
+                        <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Scraper') })}</span>}>
+                            <button className="p-1 rounded ml-1 hover:bg-gray-100">
+                                <UploadSvg />
+                            </button>
+                        </Tooltip>
+                    </Upload>
+                ),
                 icon: <WorkflowSvg />,
                 component: <WorkflowTable />,
             },
@@ -257,7 +339,12 @@ function InnerPopup(props: IPopupProps) {
                     </aside>
                     <main className="grow ml-3">
                         <Layout
-                            title={currentTabItem?.title ?? ''}
+                            title={(
+                                <div className="flex items-center">
+                                    <span>{currentTabItem?.title}</span>
+                                    {currentTabItem?.titleAffix ?? ''}
+                                </div>
+                            )}
                             headerSide={<SearchInput placeholder={t('Search')} value={searchInput} onChange={(evt) => setSearchInput(evt.target.value)} />}
                             content={currentTabItem?.component}
                             footer={footerComponent}

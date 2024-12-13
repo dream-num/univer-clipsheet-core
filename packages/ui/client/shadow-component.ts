@@ -1,11 +1,17 @@
+import { ObservableValue } from '@univer-clipsheet-core/shared';
+
 export const HOST_CLASS = 'cs-host';
 
 export abstract class ShadowComponent {
-    active = false;
+    active$ = new ObservableValue<boolean>(false);
     protected _shadowRoot: ShadowRoot | null = null;
     protected _template: string = '';
     protected $host: HTMLElement | null = null;
     protected $parent: HTMLElement | null = null;
+
+    get active() {
+        return this.active$.value;
+    }
 
     get shadowRoot() {
         return this._shadowRoot;
@@ -45,12 +51,12 @@ export abstract class ShadowComponent {
     }
 
     public activate() {
-        this.active = true;
+        this.active$.next(true);
         this.createTemplateNodes();
     }
 
     public deactivate(): void {
-        this.active = false;
+        this.active$.next(false);
         const { $parent } = this;
         if ($parent && $parent.contains(this.$host)) {
             $parent.removeChild(this.$host!);

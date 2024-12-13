@@ -86,7 +86,7 @@ export function sendSetStorageMessage(key: string, payload: any) {
     });
 }
 
-export function requestDataSource<T, P = Record<string, any>>(key: string, params: P, filter: (message: PushDataSourceMessage<T>) => boolean) {
+export function requestDataSource<T, P = Record<string, any>>(key: string, params: P, filter: (message: PushDataSourceMessage<T>) => boolean = () => true) {
     const getMsg: GetDataSourceMessage<string> = {
         type: ClipsheetMessageTypeEnum.GetDataSource,
         payload: {

@@ -36,7 +36,6 @@ export function SidePanel(props: ISidePanelProps) {
 
     const [drillDownConfig, setDrillDownConfig] = useState<IDrillDownConfig | undefined>();
     const [drillDownFormLoading, setDrillDownFormLoading] = useState(false);
-    const columnUrlRef = useRef<string | undefined>(undefined);
 
     const messageRef = useRef<IMessageRef>(null);
 
@@ -60,10 +59,7 @@ export function SidePanel(props: ISidePanelProps) {
                             config={drillDownConfig}
                             onBack={() => {
                                 setView(SidePanelViewEnum.ScraperForm);
-                                const url = columnUrlRef.current;
-                                if (url) {
-                                    navigateTo(url);
-                                }
+                                chrome.tabs.goBack();
                             }}
                             onConfirm={async (_config) => {
                                 setDrillDownFormLoading(true);
@@ -82,19 +78,18 @@ export function SidePanel(props: ISidePanelProps) {
                                     return { ...scraper };
                                 });
 
-                                const url = columnUrlRef.current;
-                                if (url) {
-                                    navigateTo(url);
-                                }
+                                chrome.tabs.goBack();
                             }}
                         />
                     )
                     : (
-                        <ScraperForm onColumnEdit={(c) => {
+                        <ScraperForm onColumnEdit={async (c, scraper) => {
                             if (!c.url) {
                                 return;
                             }
-                            columnUrlRef.current = c.url;
+
+                            setCurrentScraper(scraper);
+
                             navigateTo(c.url)
                                 .then(() => {
                                     setView(SidePanelViewEnum.DrillDownColumnForm);

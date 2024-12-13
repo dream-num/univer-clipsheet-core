@@ -205,3 +205,15 @@ export function useSyncIframeRectEffect(ref: React.RefObject<HTMLElement>) {
         setRect(newRect);
     });
 }
+
+export function usePromise<T>(promise: Promise<T> | (() => Promise<T>), deps: React.DependencyList = []): T | undefined {
+    const [state, setState] = useState<T>();
+
+    useEffect(() => {
+        const promiseValue = typeof promise === 'function' ? promise() : promise;
+
+        promiseValue.then((newValue) => setState(newValue));
+    }, deps);
+
+    return state;
+}

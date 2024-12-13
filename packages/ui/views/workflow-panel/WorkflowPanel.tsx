@@ -246,15 +246,14 @@ const InnerWorkflowPanel = (props: {
                 },
             });
 
-            const duration = 2000;
-
             messageRef.current?.showMessage({
                 type: 'success',
                 text: isEdit ? t('SaveWorkflowSuccessfully') : t('CreateWorkflowSuccessfully'),
-                duration,
+                duration: 2000,
+                onClose: () => {
+                    closeWorkflowDialog();
+                },
             });
-
-            setTimeout(closeWorkflowDialog, duration);
         };
 
         return (

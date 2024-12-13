@@ -8,6 +8,8 @@ import { InputNumber } from '@components/input-number/InputNumber';
 import { t } from '@univer-clipsheet-core/locale';
 import { connectElementInspection, coverHelper, requestUpperElement } from '@client/index';
 import { NoDataSvg } from '@components/icons';
+import { useSidePanelContext } from '@views/sidepanel/context';
+import { useObservableValue } from '@lib/hooks';
 import { DrillDownColumnFormItem } from './DrillDownColumnFormItem';
 
 const BackArrowSvg = () => {
@@ -41,6 +43,10 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
     const { loading, config, onBack, onConfirm } = props;
 
     const [drillDownConfig, setDrillDownConfig] = useState<IDrillDownConfig>(config || createDrillDownConfig());
+
+    const { service } = useSidePanelContext();
+
+    const [getDrillDownColumnDisabled] = useObservableValue(service?.getDrillDownColumnDisabled$);
 
     useEffect(() => {
         if (config) {
@@ -109,7 +115,7 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
         };
     }, []);
 
-    const content = drillDownConfig.columns.length === 0
+    const columnList = drillDownConfig.columns.length === 0
         ? (
             <div className="flex flex-col items-center justify-center h-full">
                 <NoDataSvg className="w-[240px] h-[120px] mb-2" />
@@ -124,9 +130,7 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
                         return (
                             <li key={index}>
                                 <DrillDownColumnFormItem
-                                    disabled={{
-                                        name: Boolean((item as RuntimeDrillDownColumn).cellData),
-                                    }}
+                                    disabled={getDrillDownColumnDisabled?.(item as RuntimeDrillDownColumn)}
                                     border
                                     deletable
                                     data={item}
@@ -147,6 +151,7 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
                                         setInspectingColumnId(item.id);
                                     }}
                                     onDelete={() => {
+                                        coverHelper.removeCover(item.id);
                                         setDrillDownConfig({ ...drillDownConfig, columns: drillDownConfig.columns.filter((c) => c.id !== item.id) });
                                     }}
                                 />
@@ -168,7 +173,7 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
                 </button>
                 <span className="ml-2">{t('SetDrillDownCols')}</span>
             </h1>
-            {content}
+            {columnList}
             <footer className="rounded-b  shadow-[0_-12px_24px_-12px_rgba(0,0,0,0.2)]  text-xs font-medium mt-[30px] py-3 px-4  bg-white  fixed left-2 bottom-2 w-[calc(100%-16px)]">
                 <div className="p-3 border-gray-200 border rounded-lg flex flex-col gap-3 mb-3">
                     <h1>{t('DrillDownScrapingConfig')}</h1>

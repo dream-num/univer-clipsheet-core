@@ -2,7 +2,7 @@ import { ArrowGradientSvg, ClickPointSvg } from '@components/icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { DropdownMenu } from '@components/DropdownMenu';
-import { closePopup, getActiveTab, promisifyMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { closePopup, closeSidePanel, getActiveTab, promisifyMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { DropdownMenuItem } from '@components/DropdownMenu';
 import type { HighlightDetectedTableMessage, IDetectedTableOption, PushDetectTablesMessage, RequestDetectTablesMessage, ScrapDetectedTableMessage } from '@client/index';
 import { DetectTablesMessageTypeEnum } from '@client/index';
@@ -83,14 +83,16 @@ const InnerCollectDataFooter = forwardRef<ICollectDataFooterRef, ICollectDataFoo
     const onScrapingClick = useCallback(async () => {
         const activeTab = await getActiveTab();
         const tabId = activeTab?.id;
-        if (tabId) {
-            const message: ScrapDetectedTableMessage = {
-                type: DetectTablesMessageTypeEnum.ScrapDetectedTable,
-                payload: selectedTableId,
-            };
-            chrome.tabs.sendMessage(tabId, message);
-            closePopup();
+        if (!tabId) {
+            return;
         }
+        const message: ScrapDetectedTableMessage = {
+            type: DetectTablesMessageTypeEnum.ScrapDetectedTable,
+            payload: selectedTableId,
+        };
+        chrome.tabs.sendMessage(tabId, message);
+        closeSidePanel(tabId);
+        closePopup();
     }, [selectedTableId]);
 
     useImperativeHandle(ref, () => ({

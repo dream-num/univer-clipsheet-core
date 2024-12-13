@@ -47,7 +47,7 @@ export class IframeTablePanelShadowComponent extends ShadowComponent implements 
     }
 
     public override deactivate(): void {
-        super.deactivate();
         this._unmount();
+        super.deactivate();
     }
 }

@@ -43,6 +43,7 @@ export class TableScrapingShadowComponent extends ShadowComponent {
     rowsCount$ = new ObservableValue<number>(0);
 
     private _renderRoot: Root | null = null;
+
     extractor$ = new ObservableValue<IExtractor | null>(null);
 
     private _coverId = generateRandomId();

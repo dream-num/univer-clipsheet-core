@@ -1,10 +1,14 @@
 import type { ChannelConnectedMessage, ConnectChannelMessage } from '@univer-clipsheet-core/shared';
 import { ChannelMessageTypeEnum } from '@univer-clipsheet-core/shared';
+import type { PreviewScraperTableMessage } from '@univer-clipsheet-core/scraper';
+import { ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
+import { createLazyLoadElement, findElementBySelector, PreviewSheetFromEnum } from '@univer-clipsheet-core/table';
+import { openPreviewTablePanel } from '@lib/helper';
 import type { IClientChannel } from './client-channel';
 import { DrillDownClientChannel } from './drill-down-client-channel';
 import { ScraperClientChannel } from './scraper-client-channel';
 
-export class ScraperClientChannelService {
+export class ScraperClientService {
     clientChannels = new Set<IClientChannel>();
 
     constructor() {
@@ -17,7 +21,7 @@ export class ScraperClientChannelService {
     }
 
     listenMessage() {
-        chrome.runtime.onMessage.addListener((message: ConnectChannelMessage, sender, sendResponse) => {
+        chrome.runtime.onMessage.addListener((message: ConnectChannelMessage | PreviewScraperTableMessage, sender, sendResponse) => {
             switch (message.type) {
                 case ChannelMessageTypeEnum.ConnectChannel: {
                     const channelName = message.payload;
@@ -35,6 +39,26 @@ export class ScraperClientChannelService {
                     };
                     chrome.runtime.sendMessage(response);
                     break;
+                }
+                case ScraperMessageTypeEnum.PreviewScraperTable: {
+                    const { selector, columnNames } = message.payload;
+                    const el = findElementBySelector(selector);
+
+                    if (!el) {
+                        return;
+                    }
+                    const lazyLoadElement = createLazyLoadElement(el);
+                    if (!lazyLoadElement) {
+                        return;
+                    }
+
+                    const sheet = lazyLoadElement.getAllSheets()[0];
+                    if (!sheet) {
+                        return;
+                    }
+                    console.log('columnNames', columnNames);
+                    sheet.columnName = columnNames;
+                    openPreviewTablePanel(sheet, PreviewSheetFromEnum.ScraperForm);
                 }
             }
         });

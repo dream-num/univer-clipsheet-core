@@ -35,8 +35,16 @@ export class IframeViewController {
         });
     }
 
+    get view() {
+        return this._view$.value;
+    }
+
     get active() {
         return Array.from(this._iframeShadowComponents.values()).some((component) => component.active);
+    }
+
+    onViewChange(callback: (view: IframeViewTypeEnum) => void) {
+        this._view$.subscribe(callback);
     }
 
     setView(view: IframeViewTypeEnum) {
