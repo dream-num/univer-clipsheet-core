@@ -368,6 +368,9 @@ export class ScraperService {
                         this._executeRunScraper(res);
                     }
 
+                    this.pushScraperList({
+                        pageSize: defaultPageSize,
+                    });
                     break;
                 }
                 case ScraperMessageTypeEnum.UpdateScraper: {

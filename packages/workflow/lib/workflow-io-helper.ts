@@ -17,7 +17,7 @@ const columnTypes = [
 ];
 
 function validateColumn(columnLike: Record<string, any>): columnLike is IWorkflowColumn {
-    const requiredColumnFields = ['name', 'type', 'index'];
+    const requiredColumnFields = ['name', 'type', 'sourceColumns'];
     for (const field of requiredColumnFields) {
         if (!(field in columnLike)) {
             return false;
@@ -28,7 +28,7 @@ function validateColumn(columnLike: Record<string, any>): columnLike is IWorkflo
         return false;
     }
 
-    if (!('sourceColumns' in columnLike) || !Array.isArray(columnLike.sourceColumns)) {
+    if (!Array.isArray(columnLike.sourceColumns)) {
         return false;
     }
 

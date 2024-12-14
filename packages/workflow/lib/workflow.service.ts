@@ -554,6 +554,8 @@ export class WorkflowService {
                     if (payload.toRun) {
                         this._executeRunWorkflow(workflow);
                     }
+
+                    this.pushWorkflowList({ pageSize: defaultPageSize });
                     break;
                 }
                 case WorkflowMessageTypeEnum.RunWorkflow: {

@@ -198,6 +198,7 @@ function InnerPopup(props: IPopupProps) {
                         accept="application/json"
                         onFileChange={async (file) => {
                             const fileContent = await readFileContent(file);
+
                             const scraper = scraperIOHelper.parse(fileContent);
                             if (!scraper) {
                                 messageRef.current?.showMessage({
@@ -269,7 +270,7 @@ function InnerPopup(props: IPopupProps) {
                             });
                         }}
                     >
-                        <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Scraper') })}</span>}>
+                        <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Workflow') })}</span>}>
                             <button className="p-1 rounded ml-1 hover:bg-gray-100">
                                 <UploadSvg />
                             </button>

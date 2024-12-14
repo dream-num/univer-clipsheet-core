@@ -232,7 +232,7 @@ export const WorkflowTable = () => {
                                 const workflowStr = await workflowIOHelper.toJSON(record);
                                 const jsonBlob = new Blob([workflowStr], { type: 'application/json' });
 
-                                saveAs(jsonBlob, `scraper_${record.name}.json`);
+                                saveAs(jsonBlob, `workflow_${record.name}.json`);
                             }
                         }}
                     >

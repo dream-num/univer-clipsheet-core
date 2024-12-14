@@ -25,6 +25,7 @@ export const Upload = (props: PropsWithChildren<UploadProps>) => {
     const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            e.target.value = '';
             onFileChange?.(file);
         }
     }, [onFileChange]);
