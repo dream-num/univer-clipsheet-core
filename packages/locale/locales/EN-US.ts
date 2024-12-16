@@ -265,5 +265,6 @@ export const locale: typeof zhCN = {
     WorkflowSendEmailTips: 'We will send an email to the address you used to register your Univer account after the workflow runs.',
     Index: 'Index',
     InvalidScraperFile: 'Invalid scraper file',
+    WithUploadedSuccessfully: '{target} uploaded successfully',
     InvalidWorkflowFile: 'Invalid workflow file',
 };

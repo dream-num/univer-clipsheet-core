@@ -210,6 +210,11 @@ function InnerPopup(props: IPopupProps) {
                             sendCreateScraperMessage({
                                 scraper,
                             });
+
+                            messageRef.current?.showMessage({
+                                text: t('WithUploadedSuccessfully', { target: t('Scraper') }),
+                                type: 'success',
+                            });
                         }}
                     >
                         <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Scraper') })}</span>}>
@@ -231,52 +236,52 @@ function InnerPopup(props: IPopupProps) {
             {
                 id: TabKeys.Workflow,
                 title: t('Workflow'),
-                titleAffix: (
-                    <Upload
-                        accept="application/json"
-                        onFileChange={async (file) => {
-                            const fileContent = await readFileContent(file);
-                            const workflow = workflowIOHelper.parse(fileContent);
+                // titleAffix: (
+                //     <Upload
+                //         accept="application/json"
+                //         onFileChange={async (file) => {
+                //             const fileContent = await readFileContent(file);
+                //             const workflow = workflowIOHelper.parse(fileContent);
 
-                            if (!workflow) {
-                                messageRef.current?.showMessage({
-                                    text: t('InvalidWorkflowFile'),
-                                    type: 'error',
-                                });
-                                return;
-                            }
+                //             if (!workflow) {
+                //                 messageRef.current?.showMessage({
+                //                     text: t('InvalidWorkflowFile'),
+                //                     type: 'error',
+                //                 });
+                //                 return;
+                //             }
 
-                            const scrapers = workflow.__scrapers__.map((scraperLike) => scraperIOHelper.parse(scraperLike));
+                //             const scrapers = workflow.__scrapers__.map((scraperLike) => scraperIOHelper.parse(scraperLike));
 
-                            if (scrapers.some((scraper) => !scraper)) {
-                                messageRef.current?.showMessage({
-                                    text: t('InvalidScraperFile'),
-                                    type: 'error',
-                                });
-                                return;
-                            }
+                //             if (scrapers.some((scraper) => !scraper)) {
+                //                 messageRef.current?.showMessage({
+                //                     text: t('InvalidScraperFile'),
+                //                     type: 'error',
+                //                 });
+                //                 return;
+                //             }
 
-                            scrapers.forEach((scraper) => {
-                                sendCreateScraperMessage({
-                                    scraper,
-                                });
-                            });
+                //             scrapers.forEach((scraper) => {
+                //                 sendCreateScraperMessage({
+                //                     scraper,
+                //                 });
+                //             });
 
-                            // @ts-ignore
-                            delete workflow.__scrapers__;
+                //             // @ts-ignore
+                //             delete workflow.__scrapers__;
 
-                            sendCreateWorkflowMessage({
-                                workflow,
-                            });
-                        }}
-                    >
-                        <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Workflow') })}</span>}>
-                            <button className="p-1 rounded ml-1 hover:bg-gray-100">
-                                <UploadSvg />
-                            </button>
-                        </Tooltip>
-                    </Upload>
-                ),
+                //             sendCreateWorkflowMessage({
+                //                 workflow,
+                //             });
+                //         }}
+                //     >
+                //         <Tooltip align={{ autoArrow: false }} overlay={<span>{t('UploadWith', { text: t('Workflow') })}</span>}>
+                //             <button className="p-1 rounded ml-1 hover:bg-gray-100">
+                //                 <UploadSvg />
+                //             </button>
+                //         </Tooltip>
+                //     </Upload>
+                // ),
                 icon: <WorkflowSvg />,
                 component: <WorkflowTable />,
             },

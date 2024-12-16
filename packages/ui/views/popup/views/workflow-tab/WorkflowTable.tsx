@@ -200,10 +200,10 @@ export const WorkflowTable = () => {
                     text: t('Edit'),
                     key: EditMenuKey.Edit,
                 },
-                {
-                    text: t('Export'),
-                    key: EditMenuKey.Export,
-                },
+                // {
+                //     text: t('Export'),
+                //     key: EditMenuKey.Export,
+                // },
                 separateLineMenu,
                 {
                     text: <span className="text-[#F05252]">{t('Delete')}</span>,

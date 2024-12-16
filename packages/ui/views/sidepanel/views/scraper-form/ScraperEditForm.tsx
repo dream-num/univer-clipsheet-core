@@ -212,7 +212,6 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
                     ...scraperDataRef.current,
                     columns: scraperDataRef.current.columns.filter((c) => c.id !== column.id),
                 });
-                // setDeletedIds((ids) => ids.concat([column.id]));
             }
         },
         onEdit: (column) => {
@@ -253,10 +252,8 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             <header className="pt-3">
                 <h1 className="text-base font-medium mb-1">{scraperData.name}</h1>
                 <div className="text-gray-500 text-xs">
-                    {`${t('Created')}: ${dayjs(scraperData.createAt ?? Date.now()).format('YYYY/MM/DD HH:mm')}`}
-                    {scraperData.updateAt && (
-                        `${t('Updated')}:${dayjs(scraperData.updateAt).format('YYYY/MM/DD HH:mm')}`
-                    )}
+                    {scraperData.createAt && `${t('Created')}: ${dayjs(scraperData.createAt * 1000).format('YYYY/MM/DD HH:mm')}`}
+                    {scraperData.updateAt && `${t('Updated')}:${dayjs(scraperData.updateAt * 1000).format('YYYY/MM/DD HH:mm')}`}
                 </div>
             </header>
             <hr className="border-[#E3E5EA] border-t my-3" />

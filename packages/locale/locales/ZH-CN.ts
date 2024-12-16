@@ -263,5 +263,6 @@ export const locale = {
     WorkflowSendEmailTips: '工作流运行后，我们将向您注册 Univer 账户时使用的电子邮件地址发送电子邮件。',
     Index: '索引',
     InvalidScraperFile: '无效的采集器文件',
+    WithUploadedSuccessfully: '成功上传{target}',
     InvalidWorkflowFile: '无效的工作流文件',
 };
