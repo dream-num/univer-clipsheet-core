@@ -1,7 +1,6 @@
 import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode } from '@univer-clipsheet-core/scraper';
 import { useEffect, useState } from 'react';
-import { setStorageScraperData } from './common';
 
 export function useAutoExtractionForm(scraperData: IScraper) {
     const [autoExtractionMode, setAutoExtractionMode] = useState<AutoExtractionMode>(scraperData.mode ?? AutoExtractionMode.None);

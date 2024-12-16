@@ -42,7 +42,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
 
                     // Render cell content by different types
                     const textContent = cell.type === Sheet_Cell_Type_Enum.URL
-                        ? <Link href={cell.url}>{cell.url}</Link>
+                        ? <Link href={cell.url}>{cell.text}</Link>
                         : cell.type === Sheet_Cell_Type_Enum.IMAGE
                             ? <img src={cell.url} alt={cell.text} className="w-20 h-20 object-contain" />
                             : cell.text;

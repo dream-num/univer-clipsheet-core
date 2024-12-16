@@ -25,14 +25,19 @@ export async function getStorage<T = any>(key: string) {
     return (await chrome.storage.local.get(key))[key] as T;
 }
 
-export function pushStorage(key: string, value: any, tabId?: number) {
-    const msg: PushStorageMessage = {
+export function createPushStorageMessage(key: string, value: any): PushStorageMessage {
+    return {
         type: ClipsheetMessageTypeEnum.PushStorage,
         payload: {
             key,
             value,
         },
     };
+}
+
+export function pushStorage(key: string, value: any, tabId?: number) {
+    const msg = createPushStorageMessage(key, value);
+
     return tabId
         ? chrome.tabs.sendMessage(tabId, msg)
         : chrome.runtime.sendMessage(msg);

@@ -1,5 +1,4 @@
 import React from 'react';
-import 'rc-select/assets/index.css';
 
 import dayjs from 'dayjs';
 import { t } from '@univer-clipsheet-core/locale';

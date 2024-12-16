@@ -1,7 +1,7 @@
 
 import type { ITableApproximationExtractionParam } from '@univer-clipsheet-core/table';
 import { generateRandomId, ObservableValue } from '@univer-clipsheet-core/shared';
-import { createLazyLoadElement, findApproximationTables, getEspecialConfig, getTableApproximationByElement, getTableExtractionParamRows, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
+import { createLazyLoadElement, findApproximationTables, getEspecialConfig, getTableApproximationByElement, getTableExtractionParamRows, getWeightedScore, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import { TableScrapingShadowComponent, ViewState } from '@client/table-scraping';
 import { IframeViewController } from '@client/iframe-view';
@@ -12,6 +12,7 @@ import { TableElementExtractor, TableLikeElementExtractor } from '../table-scrap
 import type { HighlightDetectedTableMessage, PushDetectTablesMessage, RequestDetectTablesMessage, ScrapDetectedTableMessage } from './detect-tables.message';
 import { DetectTablesMessageTypeEnum } from './detect-tables.message';
 // Controller to detect tables in the page
+
 export class DetectTablesService {
     scrapingTable$ = new ObservableValue<ITableApproximationExtractionParam | HTMLTableElement | undefined>(undefined);
     highlightElement$ = new ObservableValue<HTMLElement | undefined>(undefined);
@@ -96,10 +97,24 @@ export class DetectTablesService {
 
         const bodyElements = getBodyElements(document);
 
+        const mergedTables: Array<{
+            table: HTMLTableElement;
+            weightedScore: number;
+            area: number;
+        } | ITableApproximationExtractionParam> = [];
+
         bodyElements.forEach((bodyElement) => {
             const detectedTables = Array.from(bodyElement.querySelectorAll('table'))
                 .filter((table) => this._queryTableElementRows(table) > 1)
-                .sort((a, b) => this._queryTableElementRows(b) - this._queryTableElementRows(a));
+                .map((table) => {
+                    const rect = table.getBoundingClientRect();
+
+                    return {
+                        table,
+                        weightedScore: getWeightedScore(rect.width * rect.height, this._queryTableElementRows(table)),
+                        area: rect.width * rect.height,
+                    };
+                });
 
             const detectedTableLikeParams = findApproximationTables(bodyElement, getEspecialConfig())
                 .filter((table) => {
@@ -112,25 +127,32 @@ export class DetectTablesService {
                     || element instanceof HTMLSelectElement) {
                         return false;
                     }
-
-                    // const rows = getTableExtractionParamRows(table);
-                    // console.log('average weight', table.weightedScore / rows);
-
+                    // Filter out tables with low weighted score
                     return table.weightedScore >= 1000000;
-                })
-                .sort((a, b) => {
-                    const aAverageWeight = a.weightedScore / getTableExtractionParamRows(a);
-                    const bAverageWeight = b.weightedScore / getTableExtractionParamRows(b);
-                    return bAverageWeight - aAverageWeight;
-                    // return b.weightedScore - a.weightedScore
                 });
 
-            detectedTables.forEach((table) => {
+            mergedTables.push(...detectedTables, ...detectedTableLikeParams);
+        });
+
+        const maxWeightedScore = Math.max(...mergedTables.map((table) => table.weightedScore));
+        const maxArea = Math.max(...mergedTables.map((table) => table.area));
+        function calculateSortScore(area: number, weightedScore: number, alpha = 0.5, beta = 0.5) {
+            return alpha * (weightedScore / maxWeightedScore) + beta * (area / maxArea);
+        }
+
+        const sortedTables = mergedTables
+            .sort((a, b) => {
+                return calculateSortScore(b.area, b.weightedScore) - calculateSortScore(a.area, a.weightedScore);
+            })
+            .filter((table) => calculateSortScore(table.area, table.weightedScore) > 0.01)
+            .slice(0, 10);
+
+        sortedTables.forEach((table) => {
+            if ('table' in table) {
+                this._tableMap.set(generateRandomId(), table.table);
+            } else {
                 this._tableMap.set(generateRandomId(), table);
-            });
-            detectedTableLikeParams.forEach((table) => {
-                this._tableMap.set(generateRandomId(), table);
-            });
+            }
         });
 
         this.tableElements$.next(Array.from(this._tableMap.values()).map((table) => this._resolveTableElement(table)));

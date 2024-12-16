@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { GetDataSourceMessage, GetStorageMessage, ObservableValue, PushDataSourceMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, debounce, isFunction, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, debounce, generateRandomId, getActiveTab, isFunction, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 
 export function useObservableValue<T>(observable: ObservableValue<T>): [T, (value: T) => void];
 export function useObservableValue<T>(observable?: ObservableValue<T>): [T | undefined, (value: T) => void];
@@ -51,6 +51,7 @@ export function useStorageValue<T = unknown>(key: string, defaultValue: T) {
         chrome.runtime.sendMessage(requestMessage);
         const listener = (message: PushStorageMessage) => {
             const { payload, type } = message;
+
             if (type === ClipsheetMessageTypeEnum.PushStorage
                 && payload.key === key
                 && payload.value !== undefined
@@ -216,4 +217,27 @@ export function usePromise<T>(promise: Promise<T> | (() => Promise<T>), deps: Re
     }, deps);
 
     return state;
+}
+
+export function useActiveTab() {
+    const [tab, setTab] = useState<chrome.tabs.Tab | undefined>(undefined);
+    useEffect(() => {
+        getActiveTab().then((activeTab) => {
+            setTab(activeTab);
+        });
+
+        const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+            if (tab.active) {
+                setTab(tab);
+            }
+        };
+
+        chrome.tabs.onUpdated.addListener(listener);
+
+        return () => {
+            chrome.tabs.onUpdated.removeListener(listener);
+        };
+    }, []);
+
+    return tab;
 }

@@ -1,27 +1,25 @@
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import './index.css';
 
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';
 import { t } from '@univer-clipsheet-core/locale';
-import type { IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
+import type { IScraper, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
 import { closeSidePanel, getActiveTab } from '@univer-clipsheet-core/shared';
-import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
-import { Sheet_Cell_Type_Enum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import dayjs from 'dayjs';
-import { useStorageValue } from '@lib/hooks';
 import { useSidePanelContext } from '../../context';
 import { setStorageScraperData, submitValidate } from './common';
 import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionForm, ScrollAutoExtractionForm } from './components/auto-extraction-form';
 import type { IEditColumnDialogRef } from './components/EditColumnDialog';
 import { EditColumnDialog } from './components/EditColumnDialog';
 import { PreviewTableButton } from './components/PreviewTableButton';
+import { useAutoExtractionForm } from './hooks';
+import type { IScraperFormProps } from './ScraperForm';
 import type { IScraperTableProps, UnionColumn } from './ScraperTable';
 import { isDrillDownColumn, ScraperTable } from './ScraperTable';
-import type { IScraperFormProps } from './ScraperForm';
-import { useAutoExtractionForm } from './hooks';
 
 export interface IScraperEditFormProps {
     readonly?: boolean;
@@ -343,3 +341,4 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
         </div>
     );
 };
+

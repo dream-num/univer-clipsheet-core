@@ -63,6 +63,18 @@ const WORK_AROUND_FOR_ESPECIAL_HOST: IWorkAroundForEspecialHost = {
         forcedAddCellSelectors: [],
         topElementExceptCheckShape: false,
     },
+    'qunar.com': {
+        omitRowElementSelectors: [],
+        forcedAddRowClasses: [],
+        forcedAddCellSelectors: [],
+        topElementExceptCheckShape: false,
+    },
+    'ctrip.com': {
+        omitRowElementSelectors: [],
+        forcedAddRowClasses: [],
+        forcedAddCellSelectors: [],
+        topElementExceptCheckShape: false,
+    },
     'linkedin.com': {
         omitRowElementSelectors: [
             'h2.feed-skip-link__container',
@@ -815,7 +827,9 @@ function topElementExcept(children: Element[], config: IWorkAroundForEspecialHos
 
         const isSkip = config?.topElementExceptCheckShape !== false;
 
-        if ((isSkip && (widthScore + heightScore) > 40) || (isSkip && checkInValidSize(currentRectangle.width, currentRectangle.height)) || Number.isNaN(widthScore) || Number.isNaN(heightScore)) {
+        if ((isSkip && (widthScore + heightScore) > 40)
+            || (isSkip && checkInValidSize(currentRectangle.width, currentRectangle.height))
+            || Number.isNaN(widthScore) || Number.isNaN(heightScore)) {
             exceptCount++;
         }
 
@@ -1188,7 +1202,7 @@ function omitParentElement(tables: ITableApproximationExtractionParam[]) {
     return filterTables;
 }
 
-function getWeightedScore(elementArea: number, childrenCount: number): number {
+export function getWeightedScore(elementArea: number, childrenCount: number): number {
     return elementArea * childrenCount * childrenCount;
 }
 
@@ -1637,6 +1651,7 @@ class TableElementAnalyze {
             const classText = getElementClasses(cellElement).sort().map((cls) => escapeSpecialCharacters(cls)).join('');
 
             let cellClasses = `${cellElementTagName}${classText}`;
+
             const queryList = safeQueryHelper.querySelectorAll(rowElement, cellClasses);
             if (classText.length === 0 || queryList.length > 1) {
                 cellClasses = generateCellSelector(cellElement, rowElement);
@@ -1800,40 +1815,41 @@ class TableElementAnalyze {
     }
 
     private _clearSelectorsForParentClassSelf(validClassNames: string[]) {
-        const newValidClassNames: string[] = [];
+        const newValidClassNames = new Set<string>();
 
         // this._partOfLongClassByDom.clear();
-        const repeatClasses: string[] = [];
+        const repeatClasses = new Set<string>();
         for (let i = 0; i < validClassNames.length; i++) {
             const classes = validClassNames[i];
 
-            if (classes.length === 0 || repeatClasses.includes(classes)) {
+            if (classes.length === 0 || repeatClasses.has(classes)) {
                 continue;
             }
 
             for (let j = 0; j < validClassNames.length; j++) {
                 const compareClasses = validClassNames[j];
 
-                if (classes === compareClasses || compareClasses.length === 0 || repeatClasses.includes(compareClasses)) {
+                if (classes === compareClasses || compareClasses.length === 0 || repeatClasses.has(compareClasses)) {
                     continue;
                 }
 
-                if (this._isPartOfLongClassByDom(classes, compareClasses)) {
-                    repeatClasses.push(compareClasses);
+                const [shortClassName, longClassName] = [classes, compareClasses].sort((a, b) => a.length - b.length);
+                if (this._isPartOfLongClassByDom(shortClassName, longClassName)) {
+                    repeatClasses.add(longClassName);
                 }
             }
         }
 
         for (let i = 0; i < validClassNames.length; i++) {
             const classes = validClassNames[i];
-            if (repeatClasses.includes(classes)) {
+            if (repeatClasses.has(classes)) {
                 continue;
             }
 
-            newValidClassNames.push(classes);
+            newValidClassNames.add(classes);
         }
 
-        return newValidClassNames;
+        return Array.from(newValidClassNames);
     }
 
     // private _partOfLongClassByDom = new Map<Element, string[]>();

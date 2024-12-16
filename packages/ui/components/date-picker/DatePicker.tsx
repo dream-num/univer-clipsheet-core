@@ -59,9 +59,13 @@ export interface DatePickerProps extends Omit<PickerProps, 'generateConfig'
 
 export const DatePicker = (props: DatePickerProps) => {
     const { className, ...restProps } = props;
+
     return (
         <Picker
             {...restProps}
+            classNames={{
+                popup: 'cs-date-picker',
+            }}
             className={clsx('text-sm px-2 py-1.5 border border-solid border-gray-200 bg-gray-50 rounded-lg', className)}
             suffixIcon={<CalenderSvg className=" ml-1.5 inline-flex text-[#5F6574]" />}
             prevIcon={<LeftArrowSvg className="p-1  rounded hover:bg-gray-100" />}

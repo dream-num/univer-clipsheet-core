@@ -2,7 +2,7 @@ import type { GetStorageMessage, RemoveStorageMessage, SetStorageMessage } from 
 import { ClipsheetMessageTypeEnum } from '@lib/common.message';
 import { ObservableValue } from '@lib/observable-value';
 import { getActiveTabId } from '@lib/tools';
-import { getStorage, pushStorage, removeStorage, setStorage } from './storage-utils';
+import { createPushStorageMessage, getStorage, pushStorage, removeStorage, setStorage } from './storage-utils';
 
 export class StorageService {
     constructor(
@@ -39,14 +39,18 @@ export class StorageService {
 
                     const value = await getStorage(key);
 
+                    const resMsg = createPushStorageMessage(key, value);
+
                     if (senderTabId) {
-                        pushStorage(key, value, senderTabId);
+                        chrome.tabs.sendMessage(senderTabId, resMsg);
                     }
-                    pushStorage(key, value);
+
+                    chrome.runtime.sendMessage(resMsg);
                     break;
                 }
                 case ClipsheetMessageTypeEnum.SetStorage: {
                     const { key, value } = msg.payload;
+
                     this.setStorage(key, value);
                     break;
                 }

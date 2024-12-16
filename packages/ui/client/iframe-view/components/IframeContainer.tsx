@@ -4,19 +4,24 @@ import React, { useEffect } from 'react';
 
 export interface IframeContainerProps extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
     iframeSrc$: ObservableValue<string>;
+    scrollable?: boolean;
 }
 
 export const IframeContainer = (props: IframeContainerProps) => {
-    const { iframeSrc$, ...restProps } = props;
+    const { iframeSrc$, scrollable = false, ...restProps } = props;
     const [iframeSrc] = useObservableValue(iframeSrc$);
 
     useEffect(() => {
+        if (scrollable) {
+            return;
+        }
+
         const oldOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = oldOverflow;
         };
-    }, []);
+    }, [scrollable]);
 
     return (
         <div {...restProps}>

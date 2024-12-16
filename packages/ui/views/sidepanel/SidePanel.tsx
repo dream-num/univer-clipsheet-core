@@ -1,8 +1,9 @@
 
 import type { IMessageRef } from '@components/message';
 import { Message } from '@components/message';
-import { type IDrillDownConfig, setCurrentScraper } from '@univer-clipsheet-core/scraper';
-import { useMemo, useRef, useState } from 'react';
+import type { IDrillDownConfig, IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
+import { setCurrentScraper } from '@univer-clipsheet-core/scraper';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { getActiveTab } from '@univer-clipsheet-core/shared';
 import { SidePanelContext, SidePanelViewEnum } from '@views/sidepanel/context';
 import type { ISidePanelContext } from './context';
@@ -48,6 +49,20 @@ export function SidePanel(props: ISidePanelProps) {
         };
     }, [service]);
 
+    const onColumnEdit = useCallback(async (c: IScraperColumn, scraper: IScraper) => {
+        if (!c.url) {
+            return;
+        }
+
+        setCurrentScraper(scraper);
+
+        navigateTo(c.url)
+            .then(() => {
+                setView(SidePanelViewEnum.DrillDownColumnForm);
+            });
+        setDrillDownConfig(createDrillDownConfig(c.id));
+    }, []);
+
     return (
         <SidePanelContext.Provider value={context}>
             <>
@@ -83,20 +98,7 @@ export function SidePanel(props: ISidePanelProps) {
                         />
                     )
                     : (
-                        <ScraperForm onColumnEdit={async (c, scraper) => {
-                            if (!c.url) {
-                                return;
-                            }
-
-                            setCurrentScraper(scraper);
-
-                            navigateTo(c.url)
-                                .then(() => {
-                                    setView(SidePanelViewEnum.DrillDownColumnForm);
-                                });
-                            setDrillDownConfig(createDrillDownConfig(c.id));
-                        }}
-                        />
+                        <ScraperForm onColumnEdit={onColumnEdit} />
                     ) }
             </>
         </SidePanelContext.Provider>

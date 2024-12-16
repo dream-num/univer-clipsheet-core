@@ -30,13 +30,18 @@ export const PreviewTablePanel = (props: PreviewTablePanelProps) => {
         }
 
         previewSheet.sheet.columnName = scraperColumns.map((column) => column.name);
-        previewSheet.sheet.rows.forEach((row) => {
-            row.cells = row.cells.filter((cell, index) => {
-                return scraperColumns.findIndex((c) => c.index === index) >= 0;
-            });
+        const columnIndexSet = new Set(scraperColumns.map((column) => column.index));
+
+        const rows = previewSheet.sheet.rows.map((r) => {
+            return {
+                ...r,
+                cells: r.cells.filter((cell, index) => {
+                    return columnIndexSet.has(index);
+                }),
+            };
         });
 
-        return { ...previewSheet.sheet };
+        return { ...previewSheet.sheet, rows };
     }, [previewSheet, currentScraper]);
 
     return (

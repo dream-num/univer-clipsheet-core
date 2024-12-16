@@ -1,30 +1,28 @@
 import { EyelashSvg, EyeSvg } from '@components/icons';
-import { usePromise, useStorageValue } from '@lib/hooks';
+import { useActiveTab, useStorageValue } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
 import { type IScraper, type PreviewScraperTableMessage, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
-import { getActiveTab, IframeViewTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { IframeViewTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
 import { PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
-import { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 
 export interface PreviewTableButtonProps {
     scraper: IScraper;
 }
 
-export const PreviewTableButton = (props: PreviewTableButtonProps) => {
+const InnerPreviewTableButton = (props: PreviewTableButtonProps) => {
     const { scraper } = props;
+
+    const activeTab = useActiveTab();
     const [previewSheet, setPreviewSheet] = useStorageValue<IPreviewSheetStorageValue | null>(TableStorageKeyEnum.PreviewSheet, null);
 
     const [iframeView, setIframeView] = useStorageValue<IframeViewTypeEnum>(UIStorageKeyEnum.IframeView, IframeViewTypeEnum.None);
 
-    const previewingRef = useRef(false);
-    previewingRef.current = iframeView === IframeViewTypeEnum.PreviewTablePanel && previewSheet?.from === PreviewSheetFromEnum.ScraperForm;
-
-    const activeTab = usePromise(getActiveTab);
-    const currentTabUrl = activeTab?.url;
+    const previewing = iframeView === IframeViewTypeEnum.PreviewTablePanel && previewSheet?.from === PreviewSheetFromEnum.ScraperForm;
 
     const handlePreviewTable = useCallback(() => {
-        if (previewingRef.current) {
+        if (previewing) {
             setIframeView(IframeViewTypeEnum.None);
             setPreviewSheet?.(null);
         } else {
@@ -40,16 +38,18 @@ export const PreviewTableButton = (props: PreviewTableButtonProps) => {
                 chrome.tabs.sendMessage(activeTab.id, msg);
             }
         }
-    }, [activeTab, scraper]);
+    }, [previewing, scraper, activeTab]);
 
-    if (currentTabUrl !== scraper?.url) {
+    if (activeTab?.url !== scraper.url) {
         return null;
     }
 
     return (
         <button onClick={handlePreviewTable} className="ml-1.5 inline-flex items-center text-xs text-[#274FEE]">
-            {previewingRef.current ? <EyelashSvg /> : <EyeSvg /> }
-            <span className="ml-0.5">{t(previewingRef.current ? 'HideView' : 'ViewTable')}</span>
+            {previewing ? <EyelashSvg /> : <EyeSvg /> }
+            <span className="ml-0.5">{t(previewing ? 'HideView' : 'ViewTable')}</span>
         </button>
     );
 };
+
+export const PreviewTableButton = React.memo(InnerPreviewTableButton);

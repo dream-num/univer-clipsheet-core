@@ -56,7 +56,7 @@ export class ScraperClientService {
                     if (!sheet) {
                         return;
                     }
-                    console.log('columnNames', columnNames);
+
                     sheet.columnName = columnNames;
                     openPreviewTablePanel(sheet, PreviewSheetFromEnum.ScraperForm);
                 }
