@@ -12,8 +12,7 @@ import {
     UIMessageTypeEnum,
 } from '@univer-clipsheet-core/shared';
 import { readFileContent, Upload } from '@components/Upload';
-import type { CreateScraperMessage } from '@univer-clipsheet-core/scraper';
-import { createScraper, scraperIOHelper, ScraperMessageTypeEnum, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
+import { scraperIOHelper, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
 import type { IMessageRef } from '@components/message';
 import { Message as MessageComponent } from '@components/message';
 import { SearchInput } from '@components/SearchInput';
@@ -42,7 +41,6 @@ import { WorkflowFooter, WorkflowTable } from './views/workflow-tab';
 import type { PopupViewService } from './popup-view.service';
 
 import '@views/popup/Popup.css';
-import { IWorkflow, sendCreateWorkflowMessage, workflowIOHelper } from '@univer-clipsheet-core/workflow';
 
 enum TabKeys {
     Data = 'data',

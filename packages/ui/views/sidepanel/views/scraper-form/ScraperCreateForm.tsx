@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import './index.css';
-import type { CreateScraperMessage, IClickAutoExtractionConfig, IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig } from '@univer-clipsheet-core/scraper';
-import { AutoExtractionMode, ScraperMessageTypeEnum, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
+import type { IScraper } from '@univer-clipsheet-core/scraper';
+import { AutoExtractionMode, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { useStorageValue } from '@lib/hooks';
-import { closeSidePanel, generateRandomId, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { closeSidePanel, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { t } from '@univer-clipsheet-core/locale';
-import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
-import { Sheet_Cell_Type_Enum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { Dialog } from '@components/Dialog';
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';

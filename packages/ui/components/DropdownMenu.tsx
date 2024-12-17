@@ -42,7 +42,6 @@ export const DropdownMenu: FC<PropsWithChildren<IDropdownMenuProps>> = (props) =
     visibleRef.current = visible;
 
     const onVisibleChange = useCallback((visible: boolean) => {
-        console.log('onVisibleChange', visible);
         setVisible(visible);
         _onVisibleChange?.(visible);
     }, [_onVisibleChange]);

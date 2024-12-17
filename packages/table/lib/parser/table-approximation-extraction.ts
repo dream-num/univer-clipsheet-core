@@ -426,9 +426,7 @@ export class LazyLoadElements {
 
             addedNodes = this._filterAddedNodes(elements);
         } else {
-            console.log('tableElement.children', tableElement.children);
             addedNodes = this._filterAddedNodes(Array.from(tableElement.children));
-            console.log('tableElement.addedNodes', addedNodes);
         }
 
         if (addedNodes.length === 0) {

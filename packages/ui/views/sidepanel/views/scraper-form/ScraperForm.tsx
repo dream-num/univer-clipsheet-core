@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useStorageValue } from '@lib/hooks';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { useCurrentScraper } from '@views/sidepanel/hooks';
-import { getActiveTab, getActiveTabId, pingSignal, PingSignalKeyEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { getActiveTabId, pingSignal, PingSignalKeyEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { ScraperEditForm } from './ScraperEditForm';
 import { ScraperCreateForm } from './ScraperCreateForm';
 

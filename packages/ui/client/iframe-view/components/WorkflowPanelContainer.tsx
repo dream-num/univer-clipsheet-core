@@ -1,7 +1,7 @@
-import { useObservableValue, useStorageValue } from '@lib/hooks';
+import { useStorageValue } from '@lib/hooks';
 import type { ObservableValue } from '@univer-clipsheet-core/shared';
 import { UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { IframeContainer } from './IframeContainer';
 
 interface Rect {

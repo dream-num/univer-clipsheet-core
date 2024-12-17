@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GetDataSourceMessage, GetStorageMessage, ObservableValue, PushDataSourceMessage, PushStorageMessage, SetStorageMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, debounce, generateRandomId, getActiveTab, isFunction, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, debounce, getActiveTab, isFunction, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 
 export function useObservableValue<T>(observable: ObservableValue<T>): [T, (value: T) => void];
 export function useObservableValue<T>(observable?: ObservableValue<T>): [T | undefined, (value: T) => void];

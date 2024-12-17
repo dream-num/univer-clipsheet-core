@@ -1,5 +1,4 @@
 import { IframeViewTypeEnum, ObservableValue } from '@univer-clipsheet-core/shared';
-import { ShadowComponent } from '@client/shadow-component';
 import { IframeWorkflowPanelShadowComponent } from './iframe-workflow-panel-shadow-component';
 import { IframeTablePanelShadowComponent } from './iframe-table-panel-shadow-component';
 import { IframePreviewTablePanelShadowComponent } from './iframe-preview-table-panel-shadow-component';

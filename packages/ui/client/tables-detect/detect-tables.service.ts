@@ -1,7 +1,7 @@
 
 import type { ITableApproximationExtractionParam } from '@univer-clipsheet-core/table';
 import { generateRandomId, ObservableValue } from '@univer-clipsheet-core/shared';
-import { createLazyLoadElement, findApproximationTables, getEspecialConfig, getTableApproximationByElement, getTableExtractionParamRows, getWeightedScore, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
+import { findApproximationTables, getEspecialConfig, getTableExtractionParamRows, getWeightedScore, groupTableRows, queryTableScopeRows } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
 import { TableScrapingShadowComponent, ViewState } from '@client/table-scraping';
 import { IframeViewController } from '@client/iframe-view';

@@ -10,7 +10,7 @@ import { useObservableValue, useStorageValue } from '@lib/hooks';
 import { t } from '@univer-clipsheet-core/locale';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
-import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
 import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
 import { getDrillDownSelector, getElementAccurateExtractionRows, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
