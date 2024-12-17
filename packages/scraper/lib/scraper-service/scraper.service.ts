@@ -1,6 +1,6 @@
 import { DrillDownService } from '@lib/drill-down-service';
 import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
-import type { GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
+import type { ActiveTabMessage, GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
 import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel } from '@univer-clipsheet-core/shared';
 import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
@@ -63,7 +63,6 @@ export class ScraperService {
             _scraperTabMap.set(scraper.id, newScraperTab);
 
             newScraperTab.promise.finally(() => {
-                console.log('ScraperTab disposed');
                 newScraperTab.dispose();
             });
 
@@ -319,8 +318,22 @@ export class ScraperService {
             | StopScraperMessage
             | DeleteScraperMessage
             | CreateScraperMessage
-            | UpdateScraperMessage, sender) => {
+            | UpdateScraperMessage
+            | ActiveTabMessage, sender) => {
             switch (msg.type) {
+                case ClipsheetMessageTypeEnum.ActiveTab: {
+                    const { payload } = msg;
+                    const tab = payload ?? sender.tab;
+
+                    if (!tab || !tab.id) {
+                        return;
+                    }
+
+                    chrome.tabs.update(tab.id, {
+                        active: true,
+                    });
+                    break;
+                }
                 // When page loaded and if it is created by scraper tab will start to scrape
                 case ClipsheetMessageTypeEnum.Loaded: {
                     const senderTabId = sender.tab?.id;

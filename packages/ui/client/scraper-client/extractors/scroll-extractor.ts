@@ -1,4 +1,4 @@
-import { ObservableValue } from '@univer-clipsheet-core/shared';
+import { ObservableValue, sendActiveTabMessage } from '@univer-clipsheet-core/shared';
 import type { UnionLazyLoadElements } from '@univer-clipsheet-core/table';
 import { ExtractionInterval } from './extraction-interval';
 
@@ -48,17 +48,15 @@ export class ScrollExtractor extends ExtractionInterval {
         this._registerCallbacks();
     }
 
-    static scrollToTopOfElement(el: HTMLElement) {
-        window.scrollTo({
-            top: getBodyScrollTop(el),
-            behavior: 'smooth',
-        });
-    }
-
     private _registerCallbacks() {
         const scrollCallback: ScrollExtractorCallback = (oldRect, targetElement: HTMLElement) => {
+            sendActiveTabMessage();
+
             if (targetElement instanceof HTMLBodyElement) {
-                ScrollExtractor.scrollToTopOfElement(this._startElement!);
+                window.scrollTo({
+                    top: getBodyScrollTop(this._startElement!),
+                    behavior: 'smooth',
+                });
             } else {
                 targetElement.scrollTo(0, targetElement.scrollHeight);
             }
@@ -111,6 +109,8 @@ export class ScrollExtractor extends ExtractionInterval {
         });
 
         const scrollTo = () => {
+            sendActiveTabMessage();
+
             elementScrollable && el.scrollTo({
                 top: el.scrollHeight,
                 behavior: 'smooth',

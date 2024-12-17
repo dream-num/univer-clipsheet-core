@@ -4,7 +4,7 @@ import { Message } from '@components/message';
 import type { IDrillDownConfig, IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { setCurrentScraper } from '@univer-clipsheet-core/scraper';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { getActiveTab } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, getActiveTab, IframeViewTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { SidePanelContext, SidePanelViewEnum } from '@views/sidepanel/context';
 import type { ISidePanelContext } from './context';
 import { DrillDownColumnForm } from './views/drill-down-column-form';
@@ -54,6 +54,13 @@ export function SidePanel(props: ISidePanelProps) {
             return;
         }
 
+        chrome.runtime.sendMessage({
+            type: ClipsheetMessageTypeEnum.SetStorage,
+            payload: {
+                key: UIStorageKeyEnum.IframeView,
+                value: IframeViewTypeEnum.None,
+            },
+        });
         setCurrentScraper(scraper);
 
         navigateTo(c.url)

@@ -82,7 +82,7 @@ export class ScraperTab {
                 if (resolved) {
                     return;
                 }
-                // console.log('ScraperTab resolve', res);
+
                 resolved = true;
 
                 if (res.error) {
@@ -129,9 +129,11 @@ export class ScraperTab {
         const { _responseCallbacks } = this;
         // Callback for merge response
         const responseCallback = (scraper: IScraper, res: ScraperTabResponse) => {
-            this._response = mergeResponse(this._response, res);
+            // Merge response default
+            this._response = res.merge === false
+                ? res
+                : mergeResponse(this._response, res);
 
-            console.log('new response from scraper', scraper, 'response:', res);
             if (this._response.done) {
                 this._resolve(this._response);
             }
@@ -225,7 +227,7 @@ export class ScraperTab {
         if (this._dispose$.value) {
             return;
         }
-        console.log('scraper tab dispose');
+
         this._dispose$.next(true);
         this._dispose$.dispose();
         this._onError$.dispose();
@@ -233,7 +235,6 @@ export class ScraperTab {
         const tabId = this._tab?.id;
 
         if (tabId) {
-            console.log('remove tab', tabId);
             chrome.tabs.remove(tabId);
         }
         this._responseInterceptors.clear();

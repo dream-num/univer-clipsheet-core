@@ -80,9 +80,10 @@ export const PageUrlAutoExtractionForm = (props: IPageUrlAutoExtractionFormProps
                                     const inputElement = inputRef.current;
                                     if (inputElement) {
                                         inputElement.focus();
-                                        inputElement.selectionStart = selectionStartRef.current + PAGE_URL_SLOT.length;
+                                        const selectionStart = selectionStartRef.current + PAGE_URL_SLOT.length;
+                                        inputElement.setSelectionRange(selectionStart, selectionStart);
                                     }
-                                });
+                                }, 100);
                             }}
                         >
                             {t('Insert')}

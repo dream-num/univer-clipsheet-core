@@ -2,6 +2,7 @@ import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig,
 import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
 import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
 import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
+import { ObservableValue } from '@univer-clipsheet-core/shared';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
 
@@ -202,9 +203,17 @@ export class ScraperClientChannel implements IClientChannel {
             return handleFail();
         }
 
-        let rows: ISheet_Row[] = [];
+        const rows$ = new ObservableValue<ISheet_Row[]>([]);
+
+        rows$.subscribe((rows) => {
+            handleResponse({
+                rows,
+                merge: false,
+            });
+        });
+
         lazyLoadElement.onRowsUpdated((newRows) => {
-            rows = rows.concat(newRows);
+            rows$.next(rows$.value.concat(newRows));
         });
 
         const scrollExtractor = new ScrollExtractor({
@@ -215,12 +224,12 @@ export class ScraperClientChannel implements IClientChannel {
 
         const sheet = lazyLoadElement.getAllSheets()[0];
         if (sheet) {
-            rows = rows.concat(sheet.rows);
+            rows$.next(rows$.value.concat(sheet.rows));
         }
 
         scrollExtractor.done$.subscribe(() => {
             handleResponse({
-                rows,
+                rows: rows$.value,
                 done: true,
             });
         });
@@ -229,7 +238,7 @@ export class ScraperClientChannel implements IClientChannel {
             .then((success) => {
                 if (!success) {
                     handleResponse({
-                        rows,
+                        rows: rows$.value,
                         done: true,
                     });
                 }

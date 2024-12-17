@@ -1,6 +1,6 @@
 import { InitialSheetView } from '@components/initial-sheet-view';
 import { useStorageValue } from '@lib/hooks';
-import type { IScraper } from '@univer-clipsheet-core/scraper';
+import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
 import type { IInitialSheet, IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
 import { PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
@@ -30,13 +30,21 @@ export const PreviewTablePanel = (props: PreviewTablePanelProps) => {
         }
 
         previewSheet.sheet.columnName = scraperColumns.map((column) => column.name);
-        const columnIndexSet = new Set(scraperColumns.map((column) => column.index));
+        const columnMap = new Map<number, IScraperColumn>();
+        scraperColumns.forEach((column) => {
+            columnMap.set(column.index, column);
+        });
 
         const rows = previewSheet.sheet.rows.map((r) => {
             return {
                 ...r,
                 cells: r.cells.filter((cell, index) => {
-                    return columnIndexSet.has(index);
+                    return columnMap.has(index);
+                }).map((cell, index) => {
+                    return {
+                        ...cell,
+                        type: columnMap.get(index)!.type,
+                    };
                 }),
             };
         });
