@@ -189,6 +189,10 @@ export class ScraperClientChannel implements IClientChannel {
     }
 
     private async _scrollExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
+        const handleScrollResponse = (res: ScraperTaskChannelResponse) => {
+            res.merge = false;
+            handleResponse(res);
+        };
         const elements = await this.waitElement(scraper.targetSelector);
         const targetElement = elements?.[0];
 
@@ -206,9 +210,8 @@ export class ScraperClientChannel implements IClientChannel {
         const rows$ = new ObservableValue<ISheet_Row[]>([]);
 
         rows$.subscribe((rows) => {
-            handleResponse({
+            handleScrollResponse({
                 rows,
-                merge: false,
             });
         });
 
@@ -228,7 +231,7 @@ export class ScraperClientChannel implements IClientChannel {
         }
 
         scrollExtractor.done$.subscribe(() => {
-            handleResponse({
+            handleScrollResponse({
                 rows: rows$.value,
                 done: true,
             });
@@ -237,7 +240,7 @@ export class ScraperClientChannel implements IClientChannel {
         scrollExtractor.startAction(targetElement)
             .then((success) => {
                 if (!success) {
-                    handleResponse({
+                    handleScrollResponse({
                         rows: rows$.value,
                         done: true,
                     });

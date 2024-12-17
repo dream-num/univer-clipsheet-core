@@ -21,13 +21,6 @@ function generateScraperPageUrl(scraper: IScraper, pageNo: number) {
     return config.templateUrl.replace(PAGE_URL_SLOT, pageNo.toString());
 }
 
-function mergeResponse(res1: ScraperTabResponse, res2: ScraperTabResponse): ScraperTabResponse {
-    return {
-        rows: res1.rows.concat(res2.rows),
-        done: res1.done || res2.done,
-    };
-}
-
 const columnFilterInterceptor: ResponseInterceptor = async (scraperTab, rows) => {
     const { scraper } = scraperTab;
     // console.log('columnFilterInterceptor', scraper.columns);
@@ -130,9 +123,12 @@ export class ScraperTab {
         // Callback for merge response
         const responseCallback = (scraper: IScraper, res: ScraperTabResponse) => {
             // Merge response default
-            this._response = res.merge === false
-                ? res
-                : mergeResponse(this._response, res);
+            this._response = {
+                rows: res.merge === false
+                    ? res.rows
+                    : this._response.rows.concat(res.rows),
+                done: this._response.done || res.done,
+            };
 
             if (this._response.done) {
                 this._resolve(this._response);

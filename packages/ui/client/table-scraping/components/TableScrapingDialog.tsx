@@ -11,8 +11,8 @@ import { t } from '@univer-clipsheet-core/locale';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
 import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
-import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
-import { getDrillDownSelector, getElementAccurateExtractionRows, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import type { IPreviewSheetStorageValue, ISheet_Row } from '@univer-clipsheet-core/table';
+import { getDrillDownSelector, getElementAccurateExtractionRows, isEmptyCell, PreviewSheetFromEnum, Sheet_Cell_Type_Enum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -160,6 +160,14 @@ function ErrorFooter(props: {
             </div>
         </div>
     );
+}
+
+function findValuableRow(rows: ISheet_Row[]) {
+    return rows.find((row) => {
+        const isEmpty = row.cells.every((cell) => isEmptyCell(cell));
+
+        return !isEmpty;
+    });
 }
 
 export const TableScrapingDialog = (props: {
@@ -319,7 +327,10 @@ export const TableScrapingDialog = (props: {
 
         const sheet = { ..._sheet, rows: _sheet.rows.slice(0, 10) };
 
-        const rowCells = sheet.rows[0].cells;
+        const row = findValuableRow(sheet.rows) ?? sheet.rows[0];
+
+        const rowCells = row.cells;
+
         const columns: IScraperColumn[] = rowCells.map((cell, index) => {
             const name = sheet.columnName[index] ?? `${t('Column')} ${index + 1}`;
 

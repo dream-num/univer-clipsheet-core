@@ -164,49 +164,6 @@ export function toResultTable(mergeTableElements: ITableElementAnalyzeRowData[][
                 valueCellCount++;
             }
         });
-        // tableData.forEach((rowData) => {
-        //     const row: ISheet_Row = {
-        //         cells: [],
-        //     };
-        //     Object.keys(rowData).sort().forEach((cellKey) => {
-        //         // if (!sheet.columnName.includes(cellKey)) {
-        //         //     sheet.columnName.push(cellKey);
-        //         // }
-
-        //         const cellData = rowData[cellKey];
-
-        //         const { text, src, href } = cellData;
-
-        //         let cell: ISheet_Row_Cell;
-        //         if (href != null && href.length > 0 && isValidUrl(href)) {
-        //             cell = {
-        //                 type: Sheet_Cell_Type_Enum.URL,
-        //                 text,
-        //                 url: href,
-        //             };
-        //         } else if (src != null && src.length > 0 && isValidUrl(src)) {
-        //             cell = {
-        //                 type: Sheet_Cell_Type_Enum.IMAGE,
-        //                 text,
-        //                 url: src,
-        //             };
-        //         } else {
-        //             cell = {
-        //                 type: Sheet_Cell_Type_Enum.TEXT,
-        //                 text,
-        //                 url: '',
-        //             };
-        //         }
-
-        //         if (!isEmptyCell(cell)) {
-        //             valueCellCount++;
-        //         }
-
-        //         row.cells.push(cell);
-        //     });
-
-        //     sheet.rows.push(row);
-        // });
 
         sheet.density = valueCellCount / cellCount;
 
