@@ -12,7 +12,7 @@ import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
 import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
 import type { IPreviewSheetStorageValue, ISheet_Row } from '@univer-clipsheet-core/table';
-import { getDrillDownSelector, getElementAccurateExtractionRows, isEmptyCell, PreviewSheetFromEnum, Sheet_Cell_Type_Enum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import { getDrillDownSelector, getElementAccurateExtractionRows, isEmptyCell, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';

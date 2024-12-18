@@ -1,6 +1,6 @@
 
 import type { GetDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, WindowService } from '@univer-clipsheet-core/shared';
 import type { IInitialSheet, ISheet_Row, ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
@@ -47,12 +47,12 @@ export class WorkflowService {
     /**
      * The Path of workflow window page
      */
-    private _workflowWindowPath: string = '';
+    // private _workflowWindowPath: string = '';
     /**
      * The validator assists the workflow in checking cell text against the filter rule
      */
     filterRuleValidator = new FilterRuleValidator();
-    workflowWindow: chrome.windows.Window | undefined = undefined;
+    // workflowWindow: chrome.windows.Window | undefined = undefined;
     private _runningWorkflowIds$ = new ObservableValue<string[]>([]);
     private _scheduleTimer: number | undefined = undefined;
 
@@ -70,7 +70,8 @@ export class WorkflowService {
 
     constructor(
         @Inject(IWorkflowDataSource) private _dataSource: IWorkflowDataSource,
-        @Inject(ScraperService) private _scraperService: ScraperService
+        @Inject(ScraperService) private _scraperService: ScraperService,
+        @Inject(WindowService) private _windowService: WindowService
         // @Inject(TableService) private _tableService: TableService
     ) {
         this._initWorkflowSchedule();
@@ -81,6 +82,10 @@ export class WorkflowService {
                 this._closeWorkflowWindow();
             }
             pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, runningIds);
+        });
+
+        this._windowService.onWindowClosed(() => {
+            this._runningWorkflowIds$.next([]);
         });
     }
 
@@ -113,7 +118,7 @@ export class WorkflowService {
             // });
 
             if (validatedWorkflows.length > 0) {
-                await this._ensureWindow();
+                // await this._ensureWindow();
                 validatedWorkflows.forEach((workflow) => this._executeRunWorkflow(workflow));
             }
         };
@@ -162,23 +167,23 @@ export class WorkflowService {
         });
     }
 
-    private async _ensureWindow() {
-        if (!this.workflowWindow) {
-            const window = await chrome.windows.create({
-                url: this._workflowWindowPath,
-                width: 800,
-                height: 600,
-                focused: false,
-            });
-            this.workflowWindow = window;
-        }
+    // private async _ensureWindow() {
+    //     if (!this.workflowWindow) {
+    //         const window = await chrome.windows.create({
+    //             url: this._workflowWindowPath,
+    //             width: 800,
+    //             height: 600,
+    //             focused: false,
+    //         });
+    //         this.workflowWindow = window;
+    //     }
 
-        return this.workflowWindow;
-    }
+    //     return this.workflowWindow;
+    // }
 
-    setWorkflowWindowPath(path: string) {
-        this._workflowWindowPath = path;
-    }
+    // setWorkflowWindowPath(path: string) {
+    //     this._workflowWindowPath = path;
+    // }
 
     /**
      * Create dependency list for scraper if not exist
@@ -258,7 +263,7 @@ export class WorkflowService {
         const workflowId = workflow.id!;
 
         const executeWorkflow = async () => {
-            const window = await this._ensureWindow();
+            const window = await this._windowService.ensureWindow();
 
             const scraperIds = new Set<string>();
 
@@ -416,11 +421,7 @@ export class WorkflowService {
     }
 
     private _closeWorkflowWindow() {
-        const windowId = this.workflowWindow?.id;
-        if (windowId) {
-            chrome.windows.remove(windowId);
-        }
-        this.workflowWindow = undefined;
+        this._windowService.closeWindow();
 
         this._scraperDependencyListMap.forEach((references, scraperId) => {
             this._scraperService.stopScraper(scraperId);
@@ -456,64 +457,6 @@ export class WorkflowService {
         const callbacks = Array.from(this._onWorkflowDoneCallbacks);
 
         await Promise.all(callbacks.map((callback) => callback({ ...res, workflow })));
-
-        // if (workflow.unitId) { // Workflow add incremental rows data to existing unit
-        //     this._tableService.appendWorkflowRows(workflow.unitId, {
-        //         workflow,
-        //         rows: res.rows,
-        //     });
-        //     // const removeDuplicatesColumnIds = workflow.rules.find((rule) => rule.name === WorkflowRuleName.RemoveDuplicate)?.payload;
-        //     // const columnIndexes = removeDuplicatesColumnIds && removeDuplicatesColumnIds.length > 0
-        //     //     ? removeDuplicatesColumnIds.map((columnId) => workflow.columns.findIndex((column) => column.id === columnId))
-        //     //     : undefined;
-
-        //     // const apiResponse = await crxRequest.addRowCells({
-        //     //     unitId: workflow.unitId,
-        //     //     rows: res.rows,
-        //     //     columnIndexes,
-        //     // });
-        //     // Add row cells failed
-        //     // if (apiResponse.error.code !== 1) {
-        //     //     return;
-        //     // }
-        // } else { // Workflow create new unit
-        //     const initialSheet = createEmptyInitialSheet();
-
-        //     initialSheet.sheetName = workflow.name;
-        //     initialSheet.rows = res.rows;
-        //     initialSheet.columnName = workflow.columns.map((c) => c.name);
-
-        //     this._tableService.addTable({
-        //         record: {
-        //             // id: generateRandomId(),
-        //             recordType: TableRecordTypeEnum.WorkflowSheet,
-        //             title: workflow.name,
-        //             sourceUrl: res.url,
-        //         },
-        //         sheets: [initialSheet],
-        //         text: '',
-        //         triggerId: workflowId,
-        //     });
-
-        //     // const task = await handleAddTask({
-        //     //     recordType: RecordType.WorkflowSheet,
-        //     //     text: '',
-        //     //     time: Date.now(),
-        //     //     title: workflow.name,
-        //     //     originUrl: res.url,
-        //     //     sheets: [initialSheet],
-        //     //     triggerId: workflowId,
-        //     // });
-
-        //     // const unitId = task?.data.unitId;
-        //     const unitId = '';
-        //     if (unitId) {
-        //         workflow.unitId = unitId;
-        //         this._dataSource.update({ ...workflow, unitId });
-        //     }
-        // }
-
-        // this._onWorkflowDone$.next({ workflow, rows: res.rows });
     }
 
     addTriggerListener(triggerName: WorkflowTriggerName, callback: (workflow: IWorkflow, context: IWorkflowDoneContext) => void) {
@@ -597,12 +540,6 @@ export class WorkflowService {
                         pushDataSource(WorkflowDataSourceKeyEnum.RunningWorkflowIds, this._runningWorkflowIds$.value);
                     }
                 }
-            }
-        });
-
-        chrome.windows.onRemoved.addListener((windowId) => {
-            if (windowId === this.workflowWindow?.id) {
-                this._runningWorkflowIds$.next([]);
             }
         });
     }

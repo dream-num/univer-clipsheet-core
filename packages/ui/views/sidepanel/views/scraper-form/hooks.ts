@@ -43,3 +43,4 @@ export function useAutoExtractionForm(scraperData: IScraper) {
         setPageUrlConfig,
     };
 }
+

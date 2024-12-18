@@ -9,5 +9,7 @@ export * from './constants';
 export * from './channel';
 export * from './services/storage-service';
 export * from './services/side-panel.service';
+export * from './services/window.service';
 export * from './utils';
 export { ObjectValidator, type IObjectValidatorInit } from './object-validator';
+

@@ -32,7 +32,7 @@ function dispatchClick(element: HTMLElement) {
 export class ClickExtractor extends ExtractionInterval {
     private lazyLoadElement$ = new ObservableValue<UnionLazyLoadElements | null>(null);
     private _thresholdCounter = new ThresholdCounter(3);
-    private _callbacks: Set<(buttonElement: HTMLElement) => void> = new Set();
+    private _callbacks: Set<() => void> = new Set();
 
     button$ = new ObservableValue<HTMLElement | null>(null);
 
@@ -65,14 +65,17 @@ export class ClickExtractor extends ExtractionInterval {
         this._registerCallbacks();
     }
 
-    registerCallback(cb: (buttonElement: HTMLElement) => void) {
+    registerCallback(cb: () => void) {
         this._callbacks.add(cb);
         return () => this._callbacks.delete(cb);
     }
 
     private _registerCallbacks() {
-        const triggerClickCallback = (buttonElement: HTMLElement) => {
-            dispatchClick(buttonElement);
+        const triggerClickCallback = () => {
+            const button = this.button$.value;
+            if (button) {
+                dispatchClick(button);
+            }
         };
 
         const latestRecord = {
@@ -124,10 +127,7 @@ export class ClickExtractor extends ExtractionInterval {
         }
 
         this.startInterval(() => {
-            const btn = this.button$.value;
-            if (btn) {
-                this._callbacks.forEach((cb) => cb(btn));
-            }
+            this._callbacks.forEach((cb) => cb());
         }, immediate);
     }
 

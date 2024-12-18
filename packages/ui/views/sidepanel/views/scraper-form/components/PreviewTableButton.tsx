@@ -5,7 +5,7 @@ import { type IScraper, type PreviewScraperTableMessage, ScraperMessageTypeEnum 
 import { IframeViewTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
 import { PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 export interface PreviewTableButtonProps {
     scraper: IScraper;
@@ -40,7 +40,24 @@ const InnerPreviewTableButton = (props: PreviewTableButtonProps) => {
         }
     }, [previewing, scraper, activeTab]);
 
-    if (activeTab?.url !== scraper.url) {
+    const ableToPreview = useMemo(() => {
+        const tabUrlStr = activeTab?.url;
+        if (!tabUrlStr) {
+            return false;
+        }
+
+        try {
+            const tabUrl = new URL(tabUrlStr);
+            const scraperUrl = new URL(scraper.url);
+
+            return tabUrl.origin === scraperUrl.origin
+            && tabUrl.pathname === scraperUrl.pathname;
+        } catch (e) {
+            return false;
+        }
+    }, [activeTab, scraper]);
+
+    if (!ableToPreview) {
         return null;
     }
 
