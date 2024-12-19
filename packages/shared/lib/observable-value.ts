@@ -1,13 +1,10 @@
 
 export class ObservableValue<T = unknown> {
     private _value: T;
-    private _initialValue: T;
     private _subscribers = new Set<(value: T, previousValue?: T) => void>();
-    private _disposers = new Set<() => void>();
     private _previousValue: T | undefined = undefined;
 
     constructor(value: T) {
-        this._initialValue = value;
         this._value = value;
     }
 
@@ -36,8 +33,6 @@ export class ObservableValue<T = unknown> {
     }
 
     dispose() {
-        this._value = this._initialValue;
-        this._disposers.forEach((disposer) => disposer());
-        this._disposers.clear();
+        this._subscribers.clear();
     }
 }

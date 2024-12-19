@@ -221,10 +221,11 @@ export class ScraperTab {
 
         this._dispose$.next(true);
         this._dispose$.dispose();
+
         this._onError$.dispose();
 
         const tabId = this._tab?.id;
-
+        console.log(tabId, 'scraper tab dispose tabId');
         if (tabId) {
             chrome.tabs.remove(tabId);
         }

@@ -5,7 +5,7 @@ import './index.css';
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';
 import { t } from '@univer-clipsheet-core/locale';
-import type { IScraper, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
+import type { IScraper, IScraperColumn, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
 import { closeSidePanel, getActiveTab } from '@univer-clipsheet-core/shared';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
@@ -212,15 +212,23 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
     const scraperTableColumn: IScraperTableProps['column'] = useMemo(() => ({
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
+                const newColumns: IScraperColumn[] = JSON.parse(JSON.stringify(scraperDataRef.current.columns));
+
+                newColumns.forEach((col) => {
+                    if (!col.drillDownConfig) {
+                        return;
+                    }
+                    const foundIndex = col.drillDownConfig.columns.findIndex((d) => d.id === column.id) ?? -1;
+                    if (foundIndex < 0) {
+                        return;
+                    }
+
+                    col.drillDownConfig.columns.splice(foundIndex, 1);
+                });
+
                 setStorageScraperData({
                     ...scraperDataRef.current,
-                    columns: scraperDataRef.current.columns.map((c) => {
-                        if (c.drillDownConfig) {
-                            c.drillDownConfig.columns = c.drillDownConfig.columns.filter((d) => d.id !== column.id);
-                        }
-
-                        return c;
-                    }),
+                    columns: newColumns,
                 });
             } else {
                 setStorageScraperData({

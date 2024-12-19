@@ -1,6 +1,7 @@
 import { ObservableValue } from '@lib/observable-value';
 
 export class WindowService {
+    private _tabRecords = new Set<number>();
     private _templatePath: string = '';
 
     private _window: chrome.windows.Window | null = null;
@@ -56,16 +57,17 @@ export class WindowService {
             }
         });
 
-        chrome.tabs.onRemoved.addListener(() => {
-            if (!this._window) {
-                return;
+        chrome.tabs.onCreated.addListener((tab) => {
+            if (tab.id
+                && tab.windowId === this._window?.id
+                && tab.pendingUrl !== this._templatePath) {
+                this._tabRecords.add(tab.id);
             }
-            const windowTabs = this._window.tabs;
+        });
 
-            // Close window if it has only one tab and it's the template path
-            if (!windowTabs
-                || (windowTabs.length === 1 && windowTabs[0].pendingUrl === this._templatePath)
-            ) {
+        chrome.tabs.onRemoved.addListener((tabId) => {
+            this._tabRecords.delete(tabId);
+            if (this._window && this._tabRecords.size === 0) {
                 this.closeWindow();
             }
         });

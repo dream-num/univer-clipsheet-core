@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import './index.css';
-import type { IScraper } from '@univer-clipsheet-core/scraper';
+import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { useRefCallback, useStorageValue } from '@lib/hooks';
 import { closeSidePanel, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
@@ -195,15 +195,23 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
     const scraperTableColumn: IScraperTableProps['column'] = useMemo(() => ({
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
+                const newColumns: IScraperColumn[] = JSON.parse(JSON.stringify(scraperDataRef.current.columns));
+
+                newColumns.forEach((col) => {
+                    if (!col.drillDownConfig) {
+                        return;
+                    }
+                    const foundIndex = col.drillDownConfig.columns.findIndex((d) => d.id === column.id) ?? -1;
+                    if (foundIndex < 0) {
+                        return;
+                    }
+
+                    col.drillDownConfig.columns.splice(foundIndex, 1);
+                });
+
                 setStorageScraperData({
                     ...scraperDataRef.current,
-                    columns: scraperDataRef.current.columns.map((c) => {
-                        if (c.drillDownConfig) {
-                            c.drillDownConfig.columns = c.drillDownConfig.columns.filter((d) => d.id !== column.id);
-                        }
-
-                        return c;
-                    }),
+                    columns: newColumns,
                 });
             } else {
                 setStorageScraperData({

@@ -1,8 +1,8 @@
 import { InitialSheetView } from '@components/initial-sheet-view';
 import { useStorageValue } from '@lib/hooks';
-import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
+import type { IScraper } from '@univer-clipsheet-core/scraper';
 import { ScraperStorageKeyEnum } from '@univer-clipsheet-core/scraper';
-import type { IInitialSheet, IPreviewSheetStorageValue, ISheet_Row } from '@univer-clipsheet-core/table';
+import type { IInitialSheet, IPreviewSheetStorageValue } from '@univer-clipsheet-core/table';
 import { PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import { useMemo } from 'react';
 
@@ -30,28 +30,25 @@ export const PreviewTablePanel = (props: PreviewTablePanelProps) => {
         }
 
         previewSheet.sheet.columnName = scraperColumns.map((column) => column.name);
-        const columnMap = new Map<number, IScraperColumn>();
-
-        scraperColumns.forEach((column) => {
-            columnMap.set(column.index, column);
-        });
 
         const rows = previewSheet.sheet.rows.map((r) => {
             return {
                 ...r,
-                cells: r.cells
-                    .map((cell, index) => {
-                        const column = columnMap.get(index);
-                        if (!column) {
-                            return null;
-                        }
-
+                cells: scraperColumns.map((column) => {
+                    const cell = r.cells[column.index];
+                    if (!cell) {
                         return {
-                            ...cell,
-                            type: column?.type ?? cell.type,
+                            text: '',
+                            url: '',
+                            type: column.type,
                         };
-                    })
-                    .filter(Boolean) as ISheet_Row['cells'],
+                    }
+
+                    return {
+                        ...cell,
+                        type: column.type,
+                    };
+                }),
             };
         });
 

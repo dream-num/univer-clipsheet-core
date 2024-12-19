@@ -89,8 +89,8 @@ export interface IScraperTableProps {
     setExpandedIds?: React.Dispatch<React.SetStateAction<string[]>>;
     onColumnDrillDownClick?: (column: IScraperColumn) => void;
     column?: {
-        onDelete?(column: UnionColumn): void;
-        onEdit?(column: UnionColumn): void;
+        onDelete?(column: UnionColumn, index: number): void;
+        onEdit?(column: UnionColumn, index: number): void;
     };
 }
 
@@ -182,11 +182,11 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                 menus={menus}
                                 onChange={(value) => {
                                     if (value === moreMenuMap.Delete) {
-                                        column?.onDelete?.(record);
+                                        column?.onDelete?.(record, index);
                                     }
 
                                     if (value === moreMenuMap.Edit) {
-                                        column?.onEdit?.(record);
+                                        column?.onEdit?.(record, index);
                                     }
                                 }}
                             >

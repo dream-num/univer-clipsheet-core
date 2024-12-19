@@ -120,7 +120,7 @@ export class ScraperService {
 
     private _createDrillDownTask(scraper: IScraper, rows: ScraperTaskChannelResponse['rows']) {
         let dispose: () => void = () => {};
-        let drillDownTabs: chrome.tabs.Tab[] = [];
+        const drillDownTabMap = new Map<number, chrome.tabs.Tab>();
 
         const executeDrillDown = async () => {
             // Map of column index to drill down config
@@ -137,8 +137,12 @@ export class ScraperService {
             const drillDownConfigMapEntries = Array.from(drillDownConfigMap.entries());
 
             const windowId = (await this._windowService.ensureWindow()).id;
+            const drillDownTabs = await Promise.all(drillDownConfigMapEntries.map(() => chrome.tabs.create({ windowId, active: false })));
+
+            drillDownTabs.forEach((tab, index) => {
+                drillDownTabMap.set(index, tab);
+            });
             // Open tabs for each drill down config
-            drillDownTabs = await Promise.all(drillDownConfigMapEntries.map(() => chrome.tabs.create({ windowId, active: false })));
 
             try {
                 // Execute drill down row by row
@@ -198,11 +202,13 @@ export class ScraperService {
                     row.cells = row.cells.flat();
                 }
             } finally {
-                drillDownTabs.forEach((tab) => {
+                Array.from(drillDownTabMap.values()).forEach((tab) => {
                     if (tab.id) {
                         chrome.tabs.remove(tab.id);
                     }
                 });
+
+                drillDownTabMap.clear();
             }
         };
 
@@ -210,7 +216,7 @@ export class ScraperService {
             response: Promise.race([
                 new Promise<void>((resolve) => {
                     dispose = () => {
-                        drillDownTabs.forEach((tab) => {
+                        Array.from(drillDownTabMap.values()).forEach((tab) => {
                             const tabId = tab.id;
                             if (!tabId) {
                                 return;
@@ -218,6 +224,8 @@ export class ScraperService {
                             chrome.tabs.remove(tabId);
                             this._drillDownService.stopDrillDown(tabId);
                         });
+
+                        drillDownTabMap.clear();
                         resolve();
                     };
                 }),
