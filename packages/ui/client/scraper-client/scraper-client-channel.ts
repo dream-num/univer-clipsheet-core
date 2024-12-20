@@ -2,9 +2,10 @@ import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig,
 import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
 import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
 import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
-import { ObservableValue } from '@univer-clipsheet-core/shared';
+import { ObservableValue, sendActiveTabMessage, waitFor } from '@univer-clipsheet-core/shared';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
+import { getBodyScrollTop } from './extractors/scroll-extractor';
 
 function intervalUntil(duration: number, interval: number, callbacks: {
     onInterval: () => void;
@@ -85,6 +86,8 @@ export class ScraperClientChannel implements IClientChannel {
     }
 
     private async _clickExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
+        window.scrollTo(0, document.body.scrollHeight);
+
         const scraperConfig = scraper.config as IClickAutoExtractionConfig;
 
         const waitTargetElement = this.waitElement(scraper.targetSelector);
@@ -127,13 +130,15 @@ export class ScraperClientChannel implements IClientChannel {
         });
 
         let latestTargetElement = targetElement!;
-        clickExtractor.registerCallback((btn) => {
+        clickExtractor.registerCallback(() => {
             const buttonElement2 = findElementBySelector(scraperConfig.buttonSelector);
             const targetElement2 = findElementBySelector(scraper.targetSelector);
 
             if (!buttonElement2) {
-                clickExtractor.stopAction();
-            } else if (btn !== buttonElement2) {
+                if (!clickExtractor.button$.value) {
+                    clickExtractor.stopAction();
+                }
+            } else if (buttonElement2 !== clickExtractor.button$.value) {
                 clickExtractor.button$.next(buttonElement2);
             }
 
@@ -173,19 +178,25 @@ export class ScraperClientChannel implements IClientChannel {
         if (!targetElement) {
             return handleFail();
         }
+        window.scrollTo({
+            top: getBodyScrollTop(targetElement),
+            behavior: 'smooth',
+        });
 
         const lazyLoadElement = createLazyLoadElement(targetElement);
         if (!lazyLoadElement) {
             return handleFail();
         }
 
-        const [sheet] = lazyLoadElement.getAllSheets();
-        if (!sheet) {
-            return handleFail();
-        }
-        handleResponse({
-            rows: sheet.rows,
-        });
+        waitFor(1500)
+            .then(() => {
+                const [sheet] = lazyLoadElement.getAllSheets();
+                if (sheet) {
+                    handleResponse({
+                        rows: sheet.rows,
+                    });
+                }
+            });
     }
 
     private async _scrollExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
@@ -193,10 +204,12 @@ export class ScraperClientChannel implements IClientChannel {
             res.merge = false;
             handleResponse(res);
         };
+        sendActiveTabMessage();
         const elements = await this.waitElement(scraper.targetSelector);
         const targetElement = elements?.[0];
 
         const scraperConfig = scraper.config as IScrollAutoExtractionConfig;
+
         if (!targetElement) {
             return handleFail();
         }

@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import './index.css';
-import type { IScraper } from '@univer-clipsheet-core/scraper';
+import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
-import { useStorageValue } from '@lib/hooks';
+import { useRefCallback, useStorageValue } from '@lib/hooks';
 import { closeSidePanel, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { t } from '@univer-clipsheet-core/locale';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
@@ -14,7 +14,7 @@ import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionF
 import { isDrillDownColumn, ScraperTable } from './ScraperTable';
 import type { IScraperTableProps, UnionColumn } from './ScraperTable';
 import { EditColumnDialog, type IEditColumnDialogRef } from './components/EditColumnDialog';
-import { setStorageScraperData, submitValidate } from './common';
+import { setStorageScraperData as _setStorageScraperData, submitValidate } from './common';
 import { PreviewTableButton } from './components/PreviewTableButton';
 import type { IScraperFormProps } from './ScraperForm';
 import { useAutoExtractionForm } from './hooks';
@@ -52,6 +52,27 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
         pageUrlConfig,
         setPageUrlConfig,
     } = useAutoExtractionForm(scraperData);
+
+    function getScraperConfig() {
+        if (autoExtractionMode === AutoExtractionMode.Scroll) {
+            return scrollConfig;
+        }
+        if (autoExtractionMode === AutoExtractionMode.Click) {
+            return clickConfig;
+        }
+        if (autoExtractionMode === AutoExtractionMode.PageUrl) {
+            return pageUrlConfig;
+        }
+        return undefined;
+    }
+
+    const setStorageScraperData = useRefCallback((scraper: IScraper) => {
+        _setStorageScraperData({
+            ...scraper,
+            mode: autoExtractionMode,
+            config: getScraperConfig(),
+        });
+    });
 
     const tabs = [
         {
@@ -128,19 +149,6 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
     const [saveDialogVisible, setSaveDialogVisible] = useState(false);
 
     const getCurrentScraper = () => {
-        function getScraperConfig() {
-            if (autoExtractionMode === AutoExtractionMode.Scroll) {
-                return scrollConfig;
-            }
-            if (autoExtractionMode === AutoExtractionMode.Click) {
-                return clickConfig;
-            }
-            if (autoExtractionMode === AutoExtractionMode.PageUrl) {
-                return pageUrlConfig;
-            }
-            return undefined;
-        }
-
         return {
             id: '',
             url: scraperData.url,
@@ -187,15 +195,23 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
     const scraperTableColumn: IScraperTableProps['column'] = useMemo(() => ({
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
+                const newColumns: IScraperColumn[] = JSON.parse(JSON.stringify(scraperDataRef.current.columns));
+
+                newColumns.forEach((col) => {
+                    if (!col.drillDownConfig) {
+                        return;
+                    }
+                    const foundIndex = col.drillDownConfig.columns.findIndex((d) => d.id === column.id) ?? -1;
+                    if (foundIndex < 0) {
+                        return;
+                    }
+
+                    col.drillDownConfig.columns.splice(foundIndex, 1);
+                });
+
                 setStorageScraperData({
                     ...scraperDataRef.current,
-                    columns: scraperDataRef.current.columns.map((c) => {
-                        if (c.drillDownConfig) {
-                            c.drillDownConfig.columns = c.drillDownConfig.columns.filter((d) => d.id !== column.id);
-                        }
-
-                        return c;
-                    }),
+                    columns: newColumns,
                 });
             } else {
                 setStorageScraperData({

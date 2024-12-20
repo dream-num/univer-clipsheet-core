@@ -226,18 +226,35 @@ export function useActiveTab() {
             setTab(activeTab);
         });
 
-        const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+        const onActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+            chrome.tabs.get(activeInfo.tabId).then((activeTab) => {
+                setTab(activeTab);
+            });
+        };
+
+        const onUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
             if (tab.active) {
                 setTab(tab);
             }
         };
 
-        chrome.tabs.onUpdated.addListener(listener);
+        chrome.tabs.onUpdated.addListener(onUpdated);
+        chrome.tabs.onActivated.addListener(onActivated);
 
         return () => {
-            chrome.tabs.onUpdated.removeListener(listener);
+            chrome.tabs.onUpdated.addListener(onUpdated);
+            chrome.tabs.onActivated.removeListener(onActivated);
         };
     }, []);
 
     return tab;
+}
+
+export function useRefCallback<T extends (...args: any[]) => any>(callback: T) {
+    const callbackRef = useRef(callback);
+    callbackRef.current = callback;
+
+    return useCallback((...args: any[]) => {
+        callbackRef.current(...args);
+    }, []);
 }

@@ -27,3 +27,4 @@ export const setStorageScraperData = (scraper: IScraper) => {
     };
     chrome.runtime.sendMessage(msg);
 };
+

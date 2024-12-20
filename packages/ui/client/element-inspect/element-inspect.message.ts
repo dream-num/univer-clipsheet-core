@@ -59,10 +59,14 @@ export async function requestElementInspection() {
     });
 }
 
-export function connectElementInspection(callback: (message: ResponseElementInspectionMessage['payload']) => void) {
+export function connectElementInspection(options: {
+    onConnectTab(): void;
+    onInspectElement: (payload: ResponseElementInspectionMessage['payload']) => void;
+}) {
+    const { onConnectTab, onInspectElement } = options;
     const listener = (message: ResponseElementInspectionMessage) => {
         if (message.type === ElementInspectMessageTypeEnum.ResponseElementInspection) {
-            callback(message.payload);
+            onInspectElement(message.payload);
         }
     };
 
@@ -75,6 +79,8 @@ export function connectElementInspection(callback: (message: ResponseElementInsp
         if (status !== 'complete') {
             await waitTabComplete(tabId);
         }
+
+        onConnectTab();
 
         chrome.tabs.sendMessage(tabId, {
             type: ElementInspectMessageTypeEnum.ConnectElementInspection,

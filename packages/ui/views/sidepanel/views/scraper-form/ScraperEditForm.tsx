@@ -1,17 +1,18 @@
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 
 import { ScraperInput } from '@components/ScraperInput';
 import { ScraperTextarea } from '@components/ScraperTextarea';
 import { t } from '@univer-clipsheet-core/locale';
-import type { IScraper, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
+import type { IScraper, IScraperColumn, UpdateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, ScraperMessageTypeEnum } from '@univer-clipsheet-core/scraper';
 import { closeSidePanel, getActiveTab } from '@univer-clipsheet-core/shared';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import dayjs from 'dayjs';
+import { useRefCallback } from '@lib/hooks';
 import { useSidePanelContext } from '../../context';
-import { setStorageScraperData, submitValidate } from './common';
+import { setStorageScraperData as _setStorageScraperData, submitValidate } from './common';
 import { AutoExtractionTabsForm, ClickAutoExtractionForm, PageUrlAutoExtractionForm, ScrollAutoExtractionForm } from './components/auto-extraction-form';
 import type { IEditColumnDialogRef } from './components/EditColumnDialog';
 import { EditColumnDialog } from './components/EditColumnDialog';
@@ -36,13 +37,6 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
     const toRunRef = useRef(false);
     const editColumnDialogRef = useRef<IEditColumnDialogRef>(null);
 
-    function setScraperDataProperty<K extends keyof IScraper>(key: K, value: IScraper[K]) {
-        setStorageScraperData({
-            ...scraperData,
-            [key]: value,
-        });
-    }
-
     const {
         autoExtractionMode,
         setAutoExtractionMode,
@@ -56,6 +50,34 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
         pageUrlConfig,
         setPageUrlConfig,
     } = useAutoExtractionForm(scraperData);
+
+    function getScraperConfig() {
+        if (autoExtractionMode === AutoExtractionMode.Scroll) {
+            return scrollConfig;
+        }
+        if (autoExtractionMode === AutoExtractionMode.Click) {
+            return clickConfig;
+        }
+        if (autoExtractionMode === AutoExtractionMode.PageUrl) {
+            return pageUrlConfig;
+        }
+        return undefined;
+    }
+
+    const setStorageScraperData = useRefCallback((scraper: IScraper) => {
+        _setStorageScraperData({
+            ...scraper,
+            mode: autoExtractionMode,
+            config: getScraperConfig(),
+        });
+    });
+
+    function setScraperDataProperty<K extends keyof IScraper>(key: K, value: IScraper[K]) {
+        setStorageScraperData({
+            ...scraperData,
+            [key]: value,
+        });
+    }
 
     const tabs = [
         {
@@ -133,24 +155,11 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
     }, [expandedIds, scraperData.columns]);
 
     const getCurrentScraper = () => {
-        function getScraperConfig() {
-            if (autoExtractionMode === AutoExtractionMode.Scroll) {
-                return scrollConfig;
-            }
-            if (autoExtractionMode === AutoExtractionMode.Click) {
-                return clickConfig;
-            }
-            if (autoExtractionMode === AutoExtractionMode.PageUrl) {
-                return pageUrlConfig;
-            }
-            return undefined;
-        }
-
         return {
             ...scraperData,
-            columns: scraperData.columns,
             mode: autoExtractionMode,
             config: getScraperConfig(),
+            columns: scraperData.columns,
         };
     };
 
@@ -194,18 +203,32 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
     const [desc, setDesc] = useState(scraperData.description);
     const [url, setUrl] = useState(scraperData.url);
 
+    useEffect(() => {
+        setName(scraperData.name);
+        setDesc(scraperData.description);
+        setUrl(scraperData.url);
+    }, [scraperData]);
+
     const scraperTableColumn: IScraperTableProps['column'] = useMemo(() => ({
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
+                const newColumns: IScraperColumn[] = JSON.parse(JSON.stringify(scraperDataRef.current.columns));
+
+                newColumns.forEach((col) => {
+                    if (!col.drillDownConfig) {
+                        return;
+                    }
+                    const foundIndex = col.drillDownConfig.columns.findIndex((d) => d.id === column.id) ?? -1;
+                    if (foundIndex < 0) {
+                        return;
+                    }
+
+                    col.drillDownConfig.columns.splice(foundIndex, 1);
+                });
+
                 setStorageScraperData({
                     ...scraperDataRef.current,
-                    columns: scraperDataRef.current.columns.map((c) => {
-                        if (c.drillDownConfig) {
-                            c.drillDownConfig.columns = c.drillDownConfig.columns.filter((d) => d.id !== column.id);
-                        }
-
-                        return c;
-                    }),
+                    columns: newColumns,
                 });
             } else {
                 setStorageScraperData({

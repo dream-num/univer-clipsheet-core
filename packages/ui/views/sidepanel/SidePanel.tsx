@@ -67,7 +67,9 @@ export function SidePanel(props: ISidePanelProps) {
             .then(() => {
                 setView(SidePanelViewEnum.DrillDownColumnForm);
             });
-        setDrillDownConfig(createDrillDownConfig(c.id));
+
+        const drillDownConfig = c.drillDownConfig || createDrillDownConfig(c.id);
+        setDrillDownConfig(drillDownConfig);
     }, []);
 
     return (

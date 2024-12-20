@@ -1,6 +1,7 @@
 import type { locale as zhCN } from './ZH-CN';
 
 export const locale: typeof zhCN = {
+    ExportAsWith: 'Export as {text}',
     Please: 'Please',
     ToUseTheFeature: 'to use the feature',
     SummarizeThisPage: 'Summarize this page',

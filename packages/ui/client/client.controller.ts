@@ -1,5 +1,5 @@
 import type { IMessage, PushStorageMessage, UIOpenTableScrapingDialogMessage } from '@univer-clipsheet-core/shared';
-import { ClientMessageTypeEnum, ClipsheetMessageTypeEnum, IframeViewTypeEnum, UIMessageTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { ClientMessageTypeEnum, ClipsheetMessageTypeEnum, IframeViewTypeEnum, sendSetIframeViewMessage, UIMessageTypeEnum, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import type { ScrapTablesMessage } from '@univer-clipsheet-core/table';
 import { TableMessageTypeEnum, TableRecordTypeEnum } from '@univer-clipsheet-core/table';
 import { Inject, Injector } from '@wendellhu/redi';
@@ -18,7 +18,7 @@ export class ClientController {
         this._tableScrapingShadowComponent.active$.subscribe((active) => {
             if (active) {
                 if (![IframeViewTypeEnum.PreviewTablePanel, IframeViewTypeEnum.None].includes(this._iframeViewController.view)) {
-                    this._iframeViewController.setView(IframeViewTypeEnum.None);
+                    sendSetIframeViewMessage(IframeViewTypeEnum.None);
                 }
             }
         });

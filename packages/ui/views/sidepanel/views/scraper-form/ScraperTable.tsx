@@ -89,8 +89,8 @@ export interface IScraperTableProps {
     setExpandedIds?: React.Dispatch<React.SetStateAction<string[]>>;
     onColumnDrillDownClick?: (column: IScraperColumn) => void;
     column?: {
-        onDelete?(column: UnionColumn): void;
-        onEdit?(column: UnionColumn): void;
+        onDelete?(column: UnionColumn, index: number): void;
+        onEdit?(column: UnionColumn, index: number): void;
     };
 }
 
@@ -168,7 +168,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                 render: (value: any, record: IScraperColumn, index: number) => {
                     const texts = [moreMenuMap.Edit, moreMenuMap.Delete];
                     const menus = texts.map((text) => {
-                        const menu: IPopupMenu = { text, key: text };
+                        const menu: IPopupMenu = { text: t(text), key: text };
                         if (text === moreMenuMap.Delete) {
                             menu.className = '!text-red-500';
                         }
@@ -182,11 +182,11 @@ export const ScraperTable = (props: IScraperTableProps) => {
                                 menus={menus}
                                 onChange={(value) => {
                                     if (value === moreMenuMap.Delete) {
-                                        column?.onDelete?.(record);
+                                        column?.onDelete?.(record, index);
                                     }
 
                                     if (value === moreMenuMap.Edit) {
-                                        column?.onEdit?.(record);
+                                        column?.onEdit?.(record, index);
                                     }
                                 }}
                             >

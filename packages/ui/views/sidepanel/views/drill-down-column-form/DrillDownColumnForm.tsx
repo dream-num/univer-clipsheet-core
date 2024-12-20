@@ -43,6 +43,8 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
     const { loading, config, onBack, onConfirm } = props;
 
     const [drillDownConfig, setDrillDownConfig] = useState<IDrillDownConfig>(config || createDrillDownConfig());
+    const drillDownConfigRef = useRef(drillDownConfig);
+    drillDownConfigRef.current = drillDownConfig;
 
     const { service } = useSidePanelContext();
 
@@ -75,39 +77,46 @@ export const DrillDownColumnForm = (props: IDrillDownColumnProps) => {
     }, []);
 
     useEffect(() => {
-        const dispose = connectElementInspection((data) => {
-            if (inspectingColumnIdRef.current) {
-                setInspectingColumnId('');
-                setDrillDownConfig((c) => ({
-                    ...c,
-                    columns: c.columns.map((column) => {
-                        if (column.id === inspectingColumnIdRef.current) {
-                            column.selector = data.selector;
-                            column.type = data.type;
-                            column.name = data.cellData?.text || '';
-                        }
-
-                        return column;
-                    }),
-                }));
-                coverHelper.updateCover(inspectingColumnIdRef.current, data.selector);
-            } else {
-                const newColumn: RuntimeDrillDownColumn = {
-                    id: generateRandomId(),
-                    name: data.cellData?.text || '',
-                    selector: data.selector,
-                    type: data.type,
-                    // Add cellData to the new column
-                    cellData: data.cellData,
-                };
-                setDrillDownConfig((c) => {
-                    return {
+        const dispose = connectElementInspection({
+            onInspectElement: (data) => {
+                if (inspectingColumnIdRef.current) {
+                    setInspectingColumnId('');
+                    setDrillDownConfig((c) => ({
                         ...c,
-                        columns: c.columns.concat([newColumn]),
+                        columns: c.columns.map((column) => {
+                            if (column.id === inspectingColumnIdRef.current) {
+                                column.selector = data.selector;
+                                column.type = data.type;
+                                column.name = data.cellData?.text || '';
+                            }
+
+                            return column;
+                        }),
+                    }));
+                    coverHelper.updateCover(inspectingColumnIdRef.current, data.selector);
+                } else {
+                    const newColumn: RuntimeDrillDownColumn = {
+                        id: generateRandomId(),
+                        name: data.cellData?.text || '',
+                        selector: data.selector,
+                        type: data.type,
+                        // Add cellData to the new column
+                        cellData: data.cellData,
                     };
+                    setDrillDownConfig((c) => {
+                        return {
+                            ...c,
+                            columns: c.columns.concat([newColumn]),
+                        };
+                    });
+                    coverHelper.addCover(newColumn.id, data.selector);
+                }
+            },
+            onConnectTab: () => {
+                drillDownConfigRef.current.columns.forEach((column) => {
+                    coverHelper.addCover(column.id, column.selector);
                 });
-                coverHelper.addCover(newColumn.id, data.selector);
-            }
+            },
         });
 
         return () => {

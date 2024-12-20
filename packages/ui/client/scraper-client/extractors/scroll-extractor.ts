@@ -9,7 +9,7 @@ export enum ScrollTargetDetectStatus {
     Completed = 'Completed',
 }
 
-function getBodyScrollTop(el: HTMLElement) {
+export function getBodyScrollTop(el: HTMLElement) {
     const rect = el.getBoundingClientRect();
 
     // 200 is a threshold to make sure we scroll to the bottom
@@ -93,6 +93,7 @@ export class ScrollExtractor extends ExtractionInterval {
 
     async detectScrollTarget(el: HTMLElement) {
         const elementScrollable = el.scrollHeight > el.offsetHeight;
+
         const bodyScrollable = document.body.scrollHeight > window.scrollY;
 
         if (!elementScrollable && !bodyScrollable) {
@@ -111,15 +112,17 @@ export class ScrollExtractor extends ExtractionInterval {
         const scrollTo = () => {
             sendActiveTabMessage();
 
-            elementScrollable && el.scrollTo({
-                top: el.scrollHeight,
-                behavior: 'smooth',
-            });
+            setTimeout(() => {
+                elementScrollable && el.scrollTo({
+                    top: el.scrollHeight,
+                    behavior: 'smooth',
+                });
 
-            bodyScrollable && window.scrollTo({
-                top: getBodyScrollTop(el),
-                behavior: 'smooth',
-            });
+                bodyScrollable && window.scrollTo({
+                    top: getBodyScrollTop(el),
+                    behavior: 'smooth',
+                });
+            }, 1000);
         };
 
         scrollTo();
@@ -155,6 +158,7 @@ export class ScrollExtractor extends ExtractionInterval {
         }
 
         this._startElement = el;
+
         const target = await this.detectScrollTarget(el);
 
         if (!target) {

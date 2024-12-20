@@ -1,7 +1,7 @@
 import { DrillDownService } from '@lib/drill-down-service';
 import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
 import type { ActiveTabMessage, GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel, waitFor, WindowService } from '@univer-clipsheet-core/shared';
 import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
 import { Inject } from '@wendellhu/redi';
@@ -12,12 +12,6 @@ import { ScraperTab } from './scraper-tab';
 import type { CreateScraperMessage, DeleteScraperMessage, IGetScraperListParams, RunScraperFailedMessage, RunScraperMessage, StopScraperMessage, UpdateScraperMessage } from './scraper.message';
 import { ScraperDataSourceKeyEnum, ScraperMessageTypeEnum } from './scraper.message';
 
-function waitFor(ms: number) {
-    return new Promise<void>((resolve) => {
-        setTimeout(resolve, ms);
-    });
-};
-
 export class ScraperService {
     private _runningScraperIds$ = new ObservableValue<string[]>([]);
     private _scraperTabMap: Map<string, ScraperTab> = new Map();
@@ -26,7 +20,8 @@ export class ScraperService {
     constructor(
         @Inject(IScraperDataSource) private _dataSource: IScraperDataSource,
         @Inject(TableService) private _tableService: TableService,
-        @Inject(DrillDownService) private _drillDownService: DrillDownService
+        @Inject(DrillDownService) private _drillDownService: DrillDownService,
+        @Inject(WindowService) private _windowService: WindowService
     ) {
         this._runningScraperIds$.subscribe((runningIds) => {
             const msg: PushDataSourceMessage = {
@@ -125,7 +120,7 @@ export class ScraperService {
 
     private _createDrillDownTask(scraper: IScraper, rows: ScraperTaskChannelResponse['rows']) {
         let dispose: () => void = () => {};
-        let drillDownTabs: chrome.tabs.Tab[] = [];
+        const drillDownTabMap = new Map<number, chrome.tabs.Tab>();
 
         const executeDrillDown = async () => {
             // Map of column index to drill down config
@@ -140,8 +135,14 @@ export class ScraperService {
             });
 
             const drillDownConfigMapEntries = Array.from(drillDownConfigMap.entries());
+
+            const windowId = (await this._windowService.ensureWindow()).id;
+            const drillDownTabs = await Promise.all(drillDownConfigMapEntries.map(() => chrome.tabs.create({ windowId, active: false })));
+
+            drillDownTabs.forEach((tab, index) => {
+                drillDownTabMap.set(index, tab);
+            });
             // Open tabs for each drill down config
-            drillDownTabs = await Promise.all(drillDownConfigMapEntries.map(() => chrome.tabs.create({ active: false })));
 
             try {
                 // Execute drill down row by row
@@ -201,11 +202,13 @@ export class ScraperService {
                     row.cells = row.cells.flat();
                 }
             } finally {
-                drillDownTabs.forEach((tab) => {
+                Array.from(drillDownTabMap.values()).forEach((tab) => {
                     if (tab.id) {
                         chrome.tabs.remove(tab.id);
                     }
                 });
+
+                drillDownTabMap.clear();
             }
         };
 
@@ -213,7 +216,7 @@ export class ScraperService {
             response: Promise.race([
                 new Promise<void>((resolve) => {
                     dispose = () => {
-                        drillDownTabs.forEach((tab) => {
+                        Array.from(drillDownTabMap.values()).forEach((tab) => {
                             const tabId = tab.id;
                             if (!tabId) {
                                 return;
@@ -221,6 +224,8 @@ export class ScraperService {
                             chrome.tabs.remove(tabId);
                             this._drillDownService.stopDrillDown(tabId);
                         });
+
+                        drillDownTabMap.clear();
                         resolve();
                     };
                 }),
@@ -236,8 +241,11 @@ export class ScraperService {
             return;
         }
 
+        const window = await this._windowService.ensureWindow();
+
         const { error, rows } = await this.runScraper({
             scraper,
+            windowId: window.id,
             onCreated: (scraperTab) => {
                 const disposers = new Set<() => void>();
                 scraperTab.addResponseInterceptor(async (scraperTab, rows) => {
@@ -293,6 +301,10 @@ export class ScraperService {
             sheets: [initialSheet],
             triggerId: scraper.id,
         });
+    }
+
+    addScraper(scraper: IScraper) {
+        return this._dataSource.add(scraper);
     }
 
     async pushScraperList(params: IGetScraperListParams) {
@@ -375,7 +387,7 @@ export class ScraperService {
                 case ScraperMessageTypeEnum.CreateScraper: {
                     const { payload } = msg;
 
-                    const res = await this._dataSource.add(payload.scraper);
+                    const res = await this.addScraper(payload.scraper);
 
                     if (payload.toRun) {
                         this._executeRunScraper(res);

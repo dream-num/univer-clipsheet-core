@@ -22,7 +22,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
         const columnLength = Math.max(sheet.columnName.length, sheet.rows[0]?.cells.length);
 
         return Array.from({ length: columnLength }).map((_, columnIndex) => {
-            const title = sheet.columnName[columnIndex] || `Column ${columnIndex + 1}`;
+            const title = sheet.columnName[columnIndex] || `${t('Column')} ${columnIndex + 1}`;
             return title;
         });
     }, [sheet]);
@@ -42,7 +42,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
 
                     // Render cell content by different types
                     const textContent = cell.type === Sheet_Cell_Type_Enum.URL
-                        ? <Link href={cell.url}>{cell.text}</Link>
+                        ? <Link href={cell.url}>{cell.text || cell.url}</Link>
                         : cell.type === Sheet_Cell_Type_Enum.IMAGE
                             ? <img src={cell.url} alt={cell.text} className="w-20 h-20 object-contain" />
                             : cell.text;

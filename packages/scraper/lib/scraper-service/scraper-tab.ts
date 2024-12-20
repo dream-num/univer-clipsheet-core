@@ -1,7 +1,6 @@
-import type { IPageUrlAutoExtractionConfig, IScraper, IScraperColumn, ScraperErrorCode } from '@lib/scraper';
+import type { IPageUrlAutoExtractionConfig, IScraper, ScraperErrorCode } from '@lib/scraper';
 import { AutoExtractionMode, PAGE_URL_SLOT } from '@lib/scraper';
 import { ObservableValue } from '@univer-clipsheet-core/shared';
-import type { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { calculateRandomInterval } from '@lib/tools';
 import type { ScraperTaskChannelResponse } from './scraper-channel';
 
@@ -23,21 +22,17 @@ function generateScraperPageUrl(scraper: IScraper, pageNo: number) {
 
 const columnFilterInterceptor: ResponseInterceptor = async (scraperTab, rows) => {
     const { scraper } = scraperTab;
-    // console.log('columnFilterInterceptor', scraper.columns);
-    const columnIndexMap = scraper.columns.reduce((map, c) => {
-        map.set(c.index, c);
-        return map;
-    }, new Map<number, IScraperColumn>());
 
     // Only selected columns will be returned
     rows.forEach((row) => {
-        row.cells = row.cells.filter((_, index) => columnIndexMap.has(index));
+        row.cells = scraper.columns.map((column) => {
+            const cell = row.cells[column.index];
 
-        row.cells.forEach((cell, cellIndex) => {
-            const column = columnIndexMap.get(cellIndex);
-            if (column) {
-                cell.type = column.type as unknown as Sheet_Cell_Type_Enum;
-            }
+            return {
+                type: column.type,
+                text: cell?.text || '',
+                url: cell?.url || '',
+            };
         });
     });
 
@@ -226,10 +221,11 @@ export class ScraperTab {
 
         this._dispose$.next(true);
         this._dispose$.dispose();
+
         this._onError$.dispose();
 
         const tabId = this._tab?.id;
-
+        console.log(tabId, 'scraper tab dispose tabId');
         if (tabId) {
             chrome.tabs.remove(tabId);
         }
