@@ -1,4 +1,5 @@
 export const locale = {
+    ExportAsWith: '导出为{text}',
     SummarizeThisPage: '总结当前页面',
     CollectingCurrentPageData: '采集当前页面',
     DataCollectionInProgress: '正在采集中...',

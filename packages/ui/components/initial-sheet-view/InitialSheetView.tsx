@@ -22,7 +22,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
         const columnLength = Math.max(sheet.columnName.length, sheet.rows[0]?.cells.length);
 
         return Array.from({ length: columnLength }).map((_, columnIndex) => {
-            const title = sheet.columnName[columnIndex] || `Column ${columnIndex + 1}`;
+            const title = sheet.columnName[columnIndex] || `${t('Column')} ${columnIndex + 1}`;
             return title;
         });
     }, [sheet]);

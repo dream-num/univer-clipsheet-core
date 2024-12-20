@@ -168,7 +168,7 @@ export const ScraperTable = (props: IScraperTableProps) => {
                 render: (value: any, record: IScraperColumn, index: number) => {
                     const texts = [moreMenuMap.Edit, moreMenuMap.Delete];
                     const menus = texts.map((text) => {
-                        const menu: IPopupMenu = { text, key: text };
+                        const menu: IPopupMenu = { text: t(text), key: text };
                         if (text === moreMenuMap.Delete) {
                             menu.className = '!text-red-500';
                         }
