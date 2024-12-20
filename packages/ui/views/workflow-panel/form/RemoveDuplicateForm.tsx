@@ -2,6 +2,7 @@ import type { IWorkflowColumn, WorkflowRemoveDuplicateRule } from '@univer-clips
 import { WorkflowRuleName } from '@univer-clipsheet-core/workflow';
 import { ColumnTypeTag } from '@components/ColumnTypeTag';
 import { t } from '@univer-clipsheet-core/locale';
+import { useEffect, useMemo } from 'react';
 import { useWorkflowPanelContext } from '../context';
 import { ColumnList, type ColumnListItem } from '../components/ColumnList';
 
@@ -16,12 +17,18 @@ const ExchangeSvg = () => {
 
 export const RemoveDuplicateForm = () => {
     const { workflow, setWorkflow } = useWorkflowPanelContext();
-    const columns = workflow?.columns ?? [];
+    const columns = useMemo(() => {
+        return workflow?.columns ?? [];
+    }, [workflow?.columns]);
 
     const rules = workflow?.rules ?? [];
     const ruleIndex = rules.findIndex((r) => r.name === WorkflowRuleName.RemoveDuplicate);
+
     const rule = rules[ruleIndex] as WorkflowRemoveDuplicateRule | undefined;
-    const columnValues = rule?.payload ?? [];
+
+    const columnValues = useMemo(() => {
+        return rule?.payload ?? columns.map((column) => column.id);
+    }, [rule?.payload, columns]);
 
     const setColumnValues = (values: string[]) => {
         const innerWorkflow = workflow!;

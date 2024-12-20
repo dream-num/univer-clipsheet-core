@@ -99,7 +99,9 @@ export const DataMergeForm = () => {
 
     const ensureWorkflowColumn = (index: number, type: Sheet_Cell_Type_Enum) => {
         if (!workflow.columns[index]) {
-            workflow.columns[index] = createEmptyColumn(type);
+            const column = createEmptyColumn(type);
+            column.name = `${t('Column')} ${index + 1}`;
+            workflow.columns[index] = column;
         }
         return workflow.columns[index];
     };

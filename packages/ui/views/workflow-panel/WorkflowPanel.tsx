@@ -201,14 +201,15 @@ const InnerWorkflowPanel = (props: {
     }, [item.key]);
 
     function getFinalWorkflow() {
-        const rules = workflow?.rules.filter((rule) => {
-            // Remove empty rules
-            if (rule.name === WorkflowRuleName.RemoveDuplicate) {
-                return rule.payload.length > 0;
-            }
+        const rules = workflow?.rules ?? [];
 
-            return true;
-        });
+        const removeDuplicatesRule = rules?.find((rule) => rule.name === WorkflowRuleName.RemoveDuplicate);
+        if (!removeDuplicatesRule) {
+            rules.push({
+                name: WorkflowRuleName.RemoveDuplicate,
+                payload: workflow.columns.map((column) => column.id),
+            });
+        }
 
         const schedule = workflow.schedule;
 
