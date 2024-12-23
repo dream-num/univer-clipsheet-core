@@ -2,7 +2,7 @@ import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig,
 import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
 import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
 import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
-import { ObservableValue, sendActiveTabMessage, waitFor } from '@univer-clipsheet-core/shared';
+import { ObservableValue, sendActiveTabMessage, sendReportPrintInfoMessage, waitFor } from '@univer-clipsheet-core/shared';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
 import { getBodyScrollTop } from './extractors/scroll-extractor';
@@ -107,7 +107,7 @@ export class ScraperClientChannel implements IClientChannel {
             if (!sheet) {
                 return;
             }
-
+            sendReportPrintInfoMessage('Click Extractor pushInitialRows', sheet.rows);
             handleResponse({
                 rows: sheet.rows,
             });
@@ -121,7 +121,7 @@ export class ScraperClientChannel implements IClientChannel {
 
             return;
         }
-
+        sendReportPrintInfoMessage('Create Click Extractor');
         const clickExtractor = new ClickExtractor({
             minInterval: scraperConfig.minInterval,
             maxInterval: scraperConfig.maxInterval,
@@ -144,6 +144,7 @@ export class ScraperClientChannel implements IClientChannel {
 
             if (targetElement2 && latestTargetElement !== targetElement2) {
                 const lazyLoadItem = lazyLoadElement.findItemByElement(latestTargetElement);
+                sendReportPrintInfoMessage('Click Extractor updateItemElement', lazyLoadItem);
 
                 if (lazyLoadItem) {
                     latestTargetElement = targetElement2;
@@ -153,9 +154,13 @@ export class ScraperClientChannel implements IClientChannel {
             }
         });
 
-        clickExtractor.registerCallback(pushInitialRows);
+        const unregister = clickExtractor.registerCallback(() => {
+            unregister();
+            pushInitialRows();
+        });
 
         clickExtractor.data$.subscribe((data) => {
+            sendReportPrintInfoMessage('Click Extractor data$:', data);
             handleResponse({
                 rows: data,
             });

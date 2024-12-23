@@ -331,10 +331,6 @@ export class LazyLoadTableElements {
         return this._onRowsUpdated$.subscribe(listener);
     }
 
-    onChange(listener: () => void) {
-        return this._onChange$.subscribe(listener);
-    }
-
     private _disposeWithMe(observer: MutationObserver) {
         this._observers.push(observer);
     }

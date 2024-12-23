@@ -87,6 +87,8 @@ export class WorkflowService {
         this._windowService.onWindowClosed(() => {
             this._runningWorkflowIds$.next([]);
         });
+
+        this.listenMessage();
     }
 
     /**
@@ -331,7 +333,7 @@ export class WorkflowService {
                                     });
                                 }
                                 if (threshold instanceof TimeoutThreshold) {
-                                    scraperTab.registerRequestCallback(() => {
+                                    scraperTab.onResponse(() => {
                                         threshold.start();
                                     });
                                 }

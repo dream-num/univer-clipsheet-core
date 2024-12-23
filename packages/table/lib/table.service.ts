@@ -17,6 +17,7 @@ export class TableService {
     constructor(
         @Inject(ITableDataSource) private _tableDataSource: ITableDataSource
     ) {
+        this.listenMessage();
     }
 
     addTable(_payload: ScrapTablesMessage['payload']) {

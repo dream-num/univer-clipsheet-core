@@ -90,7 +90,9 @@ export class TableScrapingShadowComponent extends ShadowComponent {
             extractor.lazyLoadElements$.subscribe((lazyElements) => {
                 if (lazyElements) {
                     this.rowsCount$.next(lazyElements.rows);
-                    lazyElements.onChange(() => this.rowsCount$.next(lazyElements.rows));
+                    lazyElements.onRowsUpdated(() => {
+                        this.rowsCount$.next(lazyElements.rows);
+                    });
                 } else {
                     this.rowsCount$.next(0);
                 }

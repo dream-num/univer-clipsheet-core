@@ -190,8 +190,11 @@ export class ScraperTab {
         return this._response;
     }
 
-    registerRequestCallback(callback: () => void) {
-        this._requestCallbacks.add(callback);
+    onResponse(callback: ResponseCallback) {
+        this._responseCallbacks.add(callback);
+        return () => {
+            this._responseCallbacks.delete(callback);
+        };
     }
 
     onError(callback: (error: ScraperTabResponseError) => void) {
@@ -202,7 +205,7 @@ export class ScraperTab {
         this._currentPage$.subscribe(callback);
     }
 
-    onResponse(res: ScraperTabResponse) {
+    emitResponse(res: ScraperTabResponse) {
         this._responseCallbacks.forEach((callback) => callback(this._scraper, res));
     }
 
@@ -225,7 +228,7 @@ export class ScraperTab {
         this._onError$.dispose();
 
         const tabId = this._tab?.id;
-        console.log(tabId, 'scraper tab dispose tabId');
+
         if (tabId) {
             chrome.tabs.remove(tabId);
         }

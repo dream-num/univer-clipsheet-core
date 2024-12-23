@@ -11,6 +11,7 @@ export enum ClipsheetMessageTypeEnum {
     GetDataSource = 'get_data_source',
     PushDataSource = 'push_data_source',
     ActiveTab = 'active_tab',
+    ReportPrintInfo = 'report_print_info',
 }
 
 export type OpenSidePanelMessage = IMessageWithPayload<ClipsheetMessageTypeEnum.OpenSidePanel, number>;
@@ -23,13 +24,23 @@ export type GetDataSourceMessage<K extends string, T = unknown> = IMessageWithPa
     key: K;
     params: T;
 }>;
+
 export type PushDataSourceMessage<T = unknown> = IMessageWithPayload<ClipsheetMessageTypeEnum.PushDataSource, { key: string; value: T }>;
 export type ActiveTabMessage = IMessageWithPayload<ClipsheetMessageTypeEnum.ActiveTab, chrome.tabs.Tab | undefined>;
+export type ReportPrintInfoMessage = IMessageWithPayload<ClipsheetMessageTypeEnum.ReportPrintInfo, any[]>;
 
 export function sendActiveTabMessage(tab?: chrome.tabs.Tab) {
     const message: ActiveTabMessage = {
         type: ClipsheetMessageTypeEnum.ActiveTab,
         payload: tab,
+    };
+    chrome.runtime.sendMessage(message);
+}
+
+export function sendReportPrintInfoMessage(...infos: any[]) {
+    const message: ReportPrintInfoMessage = {
+        type: ClipsheetMessageTypeEnum.ReportPrintInfo,
+        payload: infos,
     };
     chrome.runtime.sendMessage(message);
 }

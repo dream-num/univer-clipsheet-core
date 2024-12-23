@@ -48,8 +48,7 @@ const WORK_AROUND_FOR_ESPECIAL_HOST: IWorkAroundForEspecialHost = {
     'jd.com': {
         omitRowElementSelectors: [],
         forcedAddRowClasses: [],
-        forcedAddCellSelectors: [
-        ],
+        forcedAddCellSelectors: [],
         topElementExceptCheckShape: false,
     },
     'x.com': {

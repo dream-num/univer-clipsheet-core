@@ -13,6 +13,10 @@ export class DrillDownService {
     // drill down tab use tabId as key
     private _drillDownTabMap = new Map<number, IDrillDownTab>();
 
+    constructor() {
+        this.listenMessage();
+    }
+
     async runDrillDown(url: string, selectors: string[], tab?: chrome.tabs.Tab) {
         // We need to close tab if it's not provided
         let shouldCloseTab = false;

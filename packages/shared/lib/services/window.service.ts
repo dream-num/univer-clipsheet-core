@@ -8,6 +8,10 @@ export class WindowService {
 
     private _onWindowClosedSubscription$ = new ObservableValue<void>(undefined);
 
+    constructor() {
+        this.listenMessage();
+    }
+
     get window() {
         return this._window;
     }

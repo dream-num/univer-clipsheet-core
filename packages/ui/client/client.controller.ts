@@ -6,7 +6,7 @@ import { Inject, Injector } from '@wendellhu/redi';
 import { CoverService } from './cover';
 import { ElementInspectService } from './element-inspect';
 import { IframeViewController } from './iframe-view';
-import { TableScrapingShadowComponent } from './table-scraping';
+import { TableScrapingShadowComponent, ViewState } from './table-scraping';
 import { extractSheetsFromPage } from './tools';
 
 export class ClientController {
@@ -71,7 +71,9 @@ export class ClientController {
 
                     injector.get(CoverService).removeAllCovers();
                     injector.get(ElementInspectService).shadowComponent.activate();
-                    injector.get(TableScrapingShadowComponent).activate();
+                    const tableScrapingShadowComponent = injector.get(TableScrapingShadowComponent);
+                    tableScrapingShadowComponent.viewState$.next(ViewState.Selecting);
+                    tableScrapingShadowComponent.activate();
                     break;
                 }
             }

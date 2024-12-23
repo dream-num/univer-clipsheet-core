@@ -10,6 +10,7 @@ export const ISidePanelService = createIdentifier<ISidePanelService>('side-panel
 
 export class SidePanelService {
     constructor(private _sidePanelPath: string) {
+        this.listenMessage();
     }
 
     listenMessage() {

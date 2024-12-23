@@ -7,7 +7,7 @@ import { createPushStorageMessage, getStorage, pushStorage, removeStorage, setSt
 export class StorageService {
     constructor(
     ) {
-
+        this.listenMessage();
     }
 
     storageChange$ = new ObservableValue<{ key: string; value: any }>({ key: '', value: null });

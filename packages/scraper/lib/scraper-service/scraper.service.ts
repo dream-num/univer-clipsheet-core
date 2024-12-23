@@ -1,10 +1,10 @@
 import { DrillDownService } from '@lib/drill-down-service';
 import { type IDrillDownConfig, type IScraper, ScraperErrorCode } from '@lib/scraper';
 import type { ActiveTabMessage, GetDataSourceMessage, IMessage, PushDataSourceMessage } from '@univer-clipsheet-core/shared';
-import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, requestConnectChannel, waitFor, WindowService } from '@univer-clipsheet-core/shared';
+import { ClipsheetMessageTypeEnum, defaultPageSize, ObservableValue, pushDataSource, ReportPrintService, requestConnectChannel, waitFor, WindowService } from '@univer-clipsheet-core/shared';
 import type { ISheet_Row_Cell } from '@univer-clipsheet-core/table';
 import { createEmptyInitialSheet, Sheet_Cell_Type_Enum, TableRecordTypeEnum, TableService } from '@univer-clipsheet-core/table';
-import { Inject } from '@wendellhu/redi';
+import { Inject, Optional } from '@wendellhu/redi';
 import { calculateRandomInterval } from '@lib/tools';
 import { getScraperTaskChannelName, scraperTaskChannel, type ScraperTaskChannelResponse } from './scraper-channel';
 import { IScraperDataSource } from './scraper-data-source';
@@ -18,6 +18,7 @@ export class ScraperService {
     private _tabToScraperTabMap: Map<number, ScraperTab> = new Map();
 
     constructor(
+        @Optional(ReportPrintService) private _reportPrintService: ReportPrintService,
         @Inject(IScraperDataSource) private _dataSource: IScraperDataSource,
         @Inject(TableService) private _tableService: TableService,
         @Inject(DrillDownService) private _drillDownService: DrillDownService,
@@ -34,6 +35,8 @@ export class ScraperService {
 
             chrome.runtime.sendMessage(msg);
         });
+
+        this.listenMessage();
     }
 
     async queryScrapersByIds(ids: string[]) {
@@ -56,6 +59,10 @@ export class ScraperService {
             onCreated?.(newScraperTab);
 
             _scraperTabMap.set(scraper.id, newScraperTab);
+
+            newScraperTab.onResponse((scraper, res) => {
+                this._reportPrintService?.printReport('Receive new response from Scraper', scraper, res);
+            });
 
             newScraperTab.promise.finally(() => {
                 newScraperTab.dispose();
@@ -375,7 +382,7 @@ export class ScraperService {
                                 if (res.done) {
                                     port.disconnect();
                                 }
-                                scraperTab.onResponse(res);
+                                scraperTab.emitResponse(res);
                             });
                         });
 
