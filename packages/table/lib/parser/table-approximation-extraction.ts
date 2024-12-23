@@ -45,6 +45,13 @@ interface IWorkAroundForEspecialHost {
 }
 
 const WORK_AROUND_FOR_ESPECIAL_HOST: IWorkAroundForEspecialHost = {
+    'jd.com': {
+        omitRowElementSelectors: [],
+        forcedAddRowClasses: [],
+        forcedAddCellSelectors: [
+        ],
+        topElementExceptCheckShape: false,
+    },
     'x.com': {
         omitRowElementSelectors: [],
         forcedAddRowClasses: [],
