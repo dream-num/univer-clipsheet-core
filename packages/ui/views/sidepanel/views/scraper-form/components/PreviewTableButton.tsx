@@ -30,7 +30,7 @@ const InnerPreviewTableButton = (props: PreviewTableButtonProps) => {
                 type: ScraperMessageTypeEnum.PreviewScraperTable,
                 payload: {
                     selector: scraper.targetSelector,
-                    columnNames: scraper.columns.map((column) => column.name),
+                    columns: scraper.columns.slice(),
                 },
             };
 

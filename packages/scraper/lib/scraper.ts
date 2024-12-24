@@ -44,11 +44,12 @@ export interface IScraperColumn {
     name: string;
     type: Sheet_Cell_Type_Enum;
     index: number;
+    selector?: string;
     url?: string;
     drillDownConfig?: IDrillDownConfig;
 }
 
-export interface IDrillDownColumn extends Omit<IScraperColumn, 'index'> {
+export interface IDrillDownColumn extends Omit<IScraperColumn, 'index' | 'selector'> {
     selector: string;
 }
 

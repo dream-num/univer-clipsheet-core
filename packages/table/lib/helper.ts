@@ -1,5 +1,5 @@
 
-import type { IInitialSheet, ITableApproximationExtractionParam } from './parser';
+import type { IInitialSheet, ITableApproximationExtractionParam, LazyLoadElementsOptions } from './parser';
 import { getElementsAtDepth, getTableApproximationByElement, groupTableRows, Initial_Sheet_Type_Num, LazyLoadElements, LazyLoadTableElements, queryTableScopeRows, Sheet_Cell_Type_Enum } from './parser';
 import type { UnionLazyLoadElements } from './table';
 
@@ -29,15 +29,19 @@ export function getElementAccurateExtractionRows(element: HTMLElement) {
     return tableLikeParam ? getTableExtractionParamRows(tableLikeParam) : 0;
 }
 
-export function createLazyLoadElement(element: HTMLElement, isGrandchild = false) {
+export interface CreateLazyLoadElementOptions extends LazyLoadElementsOptions {
+    columnIndexes?: number[];
+}
+
+export function createLazyLoadElement(element: HTMLElement, options?: CreateLazyLoadElementOptions) {
     if (element instanceof HTMLTableElement) {
-        return new LazyLoadTableElements([element]);
+        return new LazyLoadTableElements([element], options?.columnIndexes);
     }
-    const tableLikeParam = getTableApproximationByElement(element, isGrandchild);
+    const tableLikeParam = getTableApproximationByElement(element, options?.isGrandchild);
     if (!tableLikeParam) {
         return;
     }
-    return new LazyLoadElements([tableLikeParam], isGrandchild);
+    return new LazyLoadElements([tableLikeParam], options);
 }
 
 export function getSheetsRowsData(lazyLoadElement: UnionLazyLoadElements | null) {

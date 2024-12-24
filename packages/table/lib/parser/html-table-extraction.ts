@@ -211,20 +211,15 @@ interface ILazyLoadTableElements {
 
 export class LazyLoadTableElements {
     private _onRowsUpdated$ = new ObservableValue<ISheet_Row[]>([]);
-    private _onChange$ = new ObservableValue<void>(undefined);
-    // private _listeners = new Set<() => void>();
+
     private _lazyLoadTableElements: ILazyLoadTableElements[] = [];
     private _observers: MutationObserver[] = [];
     private _existingRows: Map<string, Node> = new Map();
 
-    constructor(private _tables: Element[]) {
+    constructor(private _tables: Element[], private columnIndexes?: number[]) {
         this._init();
 
         this._scrollListener();
-
-        this._onRowsUpdated$.subscribe(() => {
-            this._onChange$.next();
-        });
     }
 
     get rows() {
@@ -275,46 +270,27 @@ export class LazyLoadTableElements {
         return false;
     }
 
-    private _addRowsToItem(element: ILazyLoadTableElements, rows: HTMLTableRowElement[]) {
+    private _addRowsToItem(lazyLoadTableElement: ILazyLoadTableElements, rows: HTMLTableRowElement[]) {
         const sheet = getSheetRows(rows);
 
-        element.sheet.rows.push(...sheet.rows);
+        lazyLoadTableElement.sheet.rows.push(...sheet.rows);
 
-        element.sheet.cellCount += sheet.cellCount;
+        lazyLoadTableElement.sheet.cellCount += sheet.cellCount;
 
-        element.sheet.density = element.sheet.cellCount / element.sheet.rows.length;
+        lazyLoadTableElement.sheet.density = lazyLoadTableElement.sheet.cellCount / lazyLoadTableElement.sheet.rows.length;
 
-        element.isAdded = true;
+        lazyLoadTableElement.isAdded = true;
 
         this._onRowsUpdated$.next(sheet.rows);
     }
 
     private _scrollListener() {
-        /**
-         * https://zjj.sz.gov.cn/zfxx/bzflh/?path=main/#/lhmc?waittype=2 页面中 table 更新了，但是没有触发 mutationObserver
-         * 加个 timeout 在 mutationObserver 后对 table 进行检查
-         */
-        let timer: ReturnType<typeof setTimeout> | null;
-        const timeoutReviewTable = (element: ILazyLoadTableElements): void => {
-            if (!timer) {
-                timer = setTimeout(() => {
-                    const rows = queryTableScopeRows(element.table).filter((node) => this._tableRowFilter(node));
-                    if (rows.length > 0) {
-                        this._addRowsToItem(element, rows);
-                    }
-                });
-                timer = null;
-            }
-        };
-
         this._lazyLoadTableElements.forEach((element) => {
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     const rows = Array.from(mutation.addedNodes).filter((node) => this._tableRowFilter(node as Element)) as HTMLTableRowElement[];
 
                     this._addRowsToItem(element, rows);
-
-                    timeoutReviewTable(element);
                 });
             });
 
@@ -344,18 +320,42 @@ export class LazyLoadTableElements {
 
         this._observers = [];
 
-        this._onChange$.dispose();
         this._onRowsUpdated$.dispose();
 
         this._existingRows.clear();
     }
 
+    private _filterSheetRowByColumnIndexes(sheet: IInitialSheet) {
+        const { columnIndexes } = this;
+
+        const filteredRows = sheet.rows.map((row) => {
+            if (columnIndexes) {
+                return {
+                    ...row,
+                    cells: row.cells.filter((cell, index) => columnIndexes.includes(index)),
+                };
+            } else {
+                return row;
+            }
+        });
+
+        return {
+            ...sheet,
+            rows: filteredRows,
+        };
+    }
+
     public getAddedSheets(): IInitialSheet[] {
-        return this._lazyLoadTableElements.map((element) => element.sheet);
+        return this._lazyLoadTableElements
+            .filter((element) => element.isAdded)
+            .map((element) => element.sheet)
+            .map((sheet) => this._filterSheetRowByColumnIndexes(sheet));
     }
 
     public getAllSheets(): IInitialSheet[] {
-        return this.getAddedSheets();
+        return this._lazyLoadTableElements
+            .map((element) => element.sheet)
+            .map((sheet) => this._filterSheetRowByColumnIndexes(sheet));
     }
 }
 

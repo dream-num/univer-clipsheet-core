@@ -20,19 +20,16 @@ function generateScraperPageUrl(scraper: IScraper, pageNo: number) {
     return config.templateUrl.replace(PAGE_URL_SLOT, pageNo.toString());
 }
 
-const columnFilterInterceptor: ResponseInterceptor = async (scraperTab, rows) => {
+const setCellTypeAsColumnDefinedInterceptor: ResponseInterceptor = async (scraperTab, rows) => {
     const { scraper } = scraperTab;
 
     // Only selected columns will be returned
     rows.forEach((row) => {
-        row.cells = scraper.columns.map((column) => {
-            const cell = row.cells[column.index];
-
-            return {
-                type: column.type,
-                text: cell?.text || '',
-                url: cell?.url || '',
-            };
+        row.cells.forEach((cell, cellIndex) => {
+            const column = scraper.columns.find((column) => column.index === cellIndex);
+            if (column) {
+                cell.type = column.type;
+            }
         });
     });
 
@@ -58,7 +55,7 @@ export class ScraperTab {
 
     constructor(private _scraper: IScraper, windowId?: number) {
         this._initResponseCallbacks();
-        this.addResponseInterceptor(columnFilterInterceptor);
+        this.addResponseInterceptor(setCellTypeAsColumnDefinedInterceptor);
 
         if (_scraper.mode === AutoExtractionMode.PageUrl) {
             this._currentPage$.next((_scraper.config as IPageUrlAutoExtractionConfig).startPage);

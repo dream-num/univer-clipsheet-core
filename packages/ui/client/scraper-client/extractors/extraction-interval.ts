@@ -10,6 +10,7 @@ export abstract class ExtractionInterval {
 
     private _timeout: number | undefined = undefined;
     private _interval: number | undefined = undefined;
+    private _intervalCallbacks: Set<() => void> = new Set();
 
     constructor(option?: {
         minInterval?: number;
@@ -20,7 +21,7 @@ export abstract class ExtractionInterval {
         this.maxInterval$ = new ObservableValue(maxInterval);
     }
 
-    protected startInterval(callback: () => void, immediate = true) {
+    protected startInterval(func: () => void) {
         const {
             minInterval$,
             maxInterval$,
@@ -37,19 +38,27 @@ export abstract class ExtractionInterval {
         const run = () => {
             const delay = calculateRandomInterval(minInterval$.value!, maxInterval$.value!);
             this._timeout = setTimeout(() => {
-                callback();
+                func();
+                this._intervalCallbacks.forEach((cb) => cb());
                 run();
             }, delay) as any;
         };
-        immediate && callback();
+
         run();
 
         intervalSeconds$.next(0);
+
         this._interval = setInterval(() => {
             intervalSeconds$.next(intervalSeconds$.value + 1);
         }, 1000) as any;
+    }
 
-        return this.stopInterval.bind(this);
+    onInterval(callback: () => void) {
+        this._intervalCallbacks.add(callback);
+
+        return () => {
+            return this._intervalCallbacks.delete(callback);
+        };
     }
 
     protected stopInterval() {

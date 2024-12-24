@@ -45,12 +45,6 @@ interface IWorkAroundForEspecialHost {
 }
 
 const WORK_AROUND_FOR_ESPECIAL_HOST: IWorkAroundForEspecialHost = {
-    'jd.com': {
-        omitRowElementSelectors: [],
-        forcedAddRowClasses: [],
-        forcedAddCellSelectors: [],
-        topElementExceptCheckShape: false,
-    },
     'x.com': {
         omitRowElementSelectors: [],
         forcedAddRowClasses: [],
@@ -322,27 +316,36 @@ interface ILazyLoadElements {
     rowData: ITableElementAnalyzeRowData[];
 }
 
+export interface LazyLoadElementsOptions {
+    classes?: string[];
+    isGrandchild?: boolean;
+}
+
 export class LazyLoadElements {
     private _onRowsUpdated$ = new ObservableValue<ISheet_Row[]>([]);
-    private _onChange$ = new ObservableValue<void>(undefined);
     private _cloneTables: ILazyLoadElements[] = [];
     private _observers: MutationObserver[] = [];
     private _existingTexts: Set<string> = new Set();
-    // private _existingTextRows: Map<string, Node> = new Map();
-    // private _existingRows: Set<Node> = new Set();
+    private _classes: string[] | undefined = undefined;
+    private _isGrandchild = false;
 
-    constructor(private _tables: ITableApproximationExtractionParam[], private _isGrandchild = false) {
+    constructor(private _tables: ITableApproximationExtractionParam[], options?: LazyLoadElementsOptions) {
+        const { isGrandchild, classes } = options || {};
+
+        this._isGrandchild = isGrandchild || false;
+        this._classes = classes;
+
         this._init();
 
         this._scrollListener();
-
-        this._onRowsUpdated$.subscribe(() => {
-            this._onChange$.next();
-        });
     }
 
     get rows() {
         return this._cloneTables.reduce((rows, table) => rows + table.rowData.length, 0);
+    }
+
+    get classes() {
+        return this._classes;
     }
 
     findItemByElement(element: Element) {
@@ -354,9 +357,20 @@ export class LazyLoadElements {
         this._handleLazyLoad(item);
     }
 
-    private _init() {
-        const config = getEspecialConfig();
+    private generateRowDataByParams(tableApproximationParam: ITableApproximationExtractionParam) {
+        const { classes } = this;
+        if (classes) {
+            return TableElementAnalyze.getCellData(tableApproximationParam.children, classes);
+        } else {
+            const tableElementAnalyze = new TableElementAnalyze(tableApproximationParam, getEspecialConfig());
+            if (!this._classes) {
+                this._classes = tableElementAnalyze.classes;
+            }
+            return tableElementAnalyze.tableData;
+        }
+    }
 
+    private _init() {
         if (this._isGrandchild) {
             this._cloneTables = this._tables.map((table) => {
                 const grandChildrenLevel = table.grandChildrenLevel || 2;
@@ -369,25 +383,25 @@ export class LazyLoadElements {
                     weightedScore: table.weightedScore,
                     selectorString: table.selectorString,
                 } as ITableApproximationExtractionParam;
+
                 if (table.grandChildrenLevel) {
                     newTable.grandChildrenLevel = grandChildrenLevel;
                     newTable.children = getElementsAtDepth(table.element, grandChildrenLevel);
                 } else {
                     newTable.children = Array.from(table.element.children);
                 }
+
                 this._filterAddedNodes(newTable.children);
-                return { table: newTable, isAdded: false, rowData: new TableElementAnalyze(newTable, config).tableData };
+
+                return { table: newTable, isAdded: false, rowData: this.generateRowDataByParams(newTable) };
             });
         } else {
             this._cloneTables = this._tables.map((table) => {
                 this._filterAddedNodes(table.children);
-                return { table, isAdded: false, rowData: new TableElementAnalyze(table, config).tableData };
+
+                return { table, isAdded: false, rowData: this.generateRowDataByParams(table) };
             });
         }
-
-        setTimeout(() => {
-            this._onChange$.next();
-        });
     }
 
     private _disposeWithMe(observer: MutationObserver) {
@@ -399,9 +413,9 @@ export class LazyLoadElements {
             if (node.nodeType !== 1) {
                 return false;
             }
-                // if (node.parentElement !== cloneTable.table.element) {
-                //     return false;
-                // }
+            // if (node.parentElement !== cloneTable.table.element) {
+            //     return false;
+            // }
             // if (this._existingRows.has(node)) {
             //     return false;
             // }
@@ -422,7 +436,6 @@ export class LazyLoadElements {
     private _handleLazyLoad(cloneTable: ILazyLoadElements) {
         const tableElement = cloneTable.table.element;
 
-        const config = getEspecialConfig();
         let addedNodes: Element[] = [];
 
         if (this._isGrandchild) {
@@ -445,7 +458,7 @@ export class LazyLoadElements {
             return node instanceof Element;
         }) as Element[];
 
-        const tableElementAnalyze = new TableElementAnalyze({
+        const rowData = this.generateRowDataByParams({
             element: tableElement,
             children: childElements,
             fitClasses: cloneTable.table.fitClasses,
@@ -453,11 +466,13 @@ export class LazyLoadElements {
             textContent: cloneTable.table.textContent,
             weightedScore: cloneTable.table.weightedScore,
             selectorString: cloneTable.table.selectorString,
-        }, config);
+        });
 
-        cloneTable.rowData = cloneTable.rowData.concat(tableElementAnalyze.tableData);
+        cloneTable.rowData = cloneTable.rowData.concat(rowData);
 
-        this._onRowsUpdated$.next(analyzeRowsToSheetRows(tableElementAnalyze.tableData));
+        this._onRowsUpdated$.next(analyzeRowsToSheetRows(rowData, {
+            rowKeys: this.classes,
+        }));
     }
 
     private _scrollListener() {
@@ -476,10 +491,6 @@ export class LazyLoadElements {
         return this._onRowsUpdated$.subscribe(listener);
     }
 
-    onChange(listener: () => void) {
-        return this._onChange$.subscribe(listener);
-    }
-
     dispose() {
         this._cloneTables = [];
 
@@ -487,9 +498,8 @@ export class LazyLoadElements {
             obs.disconnect();
         });
         this._observers = [];
-        this._onChange$.dispose();
         this._onRowsUpdated$.dispose();
-        // this._existingRows.clear();
+
         this._existingTexts.clear();
     }
 
@@ -503,12 +513,16 @@ export class LazyLoadElements {
 
     getAddedSheets() {
         const table = this.getFilterTable();
-        return toResultTable(table.map((cloneTable) => cloneTable.rowData), table.map((cloneTable) => cloneTable.table.selectorString));
+        return toResultTable(table.map((cloneTable) => cloneTable.rowData), table.map((cloneTable) => cloneTable.table.selectorString), {
+            rowKeys: this.classes,
+        });
     }
 
     public getAllSheets(): IInitialSheet[] {
         const table = fitColumnByTable(this._toTablesElementData());
-        return toResultTable(table.map((cloneTable) => cloneTable.tableData), table.map((cloneTable) => cloneTable.selectorString));
+        return toResultTable(table.map((cloneTable) => cloneTable.tableData), table.map((cloneTable) => cloneTable.selectorString), {
+            rowKeys: this.classes,
+        });
     }
 
     private _toTablesElementData() {
@@ -802,7 +816,7 @@ function checkInValidSize(width: number, height: number) {
 function topElementExcept(children: Element[], config: IWorkAroundForEspecialHostItem | undefined) {
     const childrenCount = children.length;
 
-    if (childrenCount > (config?.topElementExceptLimit || 10)) {
+    if (childrenCount >= (config?.topElementExceptLimit || 10)) {
         return false;
     }
     let preRectangle: Rectangle | null = null;
@@ -826,13 +840,13 @@ function topElementExcept(children: Element[], config: IWorkAroundForEspecialHos
         }
 
         const widthScore = calculateDiffScore(currentRectangle.width, preRectangle!.width);
-
         const heightScore = calculateDiffScore(currentRectangle.height, preRectangle!.height);
 
-        const isSkip = config?.topElementExceptCheckShape !== false;
+        const shouldCheck = config?.topElementExceptCheckShape !== false;
 
-        if ((isSkip && (widthScore + heightScore) > 40)
-            || (isSkip && checkInValidSize(currentRectangle.width, currentRectangle.height))
+        if (
+            (shouldCheck && (widthScore + heightScore) > 40)
+            // || (isSkip && checkInValidSize(currentRectangle.width, currentRectangle.height))
             || Number.isNaN(widthScore) || Number.isNaN(heightScore)) {
             exceptCount++;
         }
@@ -1223,7 +1237,7 @@ function generateCellSelector(element: Element, parentElement: Element): string 
     element.dispatchEvent(eventMouseout);
 
     // 获取元素及其所有祖先元素
-    const elements = [];
+    const elements: Element[] = [];
     let currentElement: Element | null = element;
     while (currentElement && currentElement.tagName.toLowerCase() !== 'html' && currentElement.tagName.toLowerCase() !== 'body' && currentElement !== parentElement) {
         elements.push(currentElement);
@@ -1472,7 +1486,40 @@ function getCombinations(arr: string[]): string[][] {
     return result;
 }
 
-class TableElementAnalyze {
+function imageOrLinkFilterRuler(cellElement: HTMLElement) {
+    const cellElementTagName = cellElement.tagName.toLowerCase();
+    if (
+        cellElementTagName === 'a' && cellElement.getAttribute('href')
+    ) {
+        return true;
+    }
+
+    if (
+        cellElementTagName === 'video' && cellElement.getAttribute('src')
+    ) {
+        return true;
+    }
+
+    if (
+        cellElementTagName === 'audio' && cellElement.getAttribute('src')
+    ) {
+        return true;
+    }
+
+    if (
+        cellElementTagName === 'img' && cellElement.getAttribute('src')
+    ) {
+        return true;
+    }
+
+    if (getImageInAttributes(cellElement)) {
+        return true;
+    }
+
+    return false;
+}
+
+export class TableElementAnalyze {
     private _tableData: ITableElementAnalyzeRowData[] = [];
 
     constructor(private _tableParam: ITableApproximationExtractionParam | undefined, config?: IWorkAroundForEspecialHostItem | undefined) {
@@ -1497,6 +1544,10 @@ class TableElementAnalyze {
 
     get tableData() {
         return this._tableData;
+    }
+
+    get classes() {
+        return this._classes;
     }
 
     dispose() {
@@ -1558,7 +1609,7 @@ class TableElementAnalyze {
             return [];
         }
 
-        const data = this._getCellBySelector();
+        const data = TableElementAnalyze.getCellData(this._tableParam?.children || [], this._classes);
 
         return data;
     }
@@ -1587,44 +1638,11 @@ class TableElementAnalyze {
             return true;
         }
 
-        if (this._imageOrLinkFilterRuler(cellElement)) {
+        if (imageOrLinkFilterRuler(cellElement)) {
             return true;
         }
 
         if (this._checkIsRichText(cellElement)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private _imageOrLinkFilterRuler(cellElement: HTMLElement) {
-        const cellElementTagName = cellElement.tagName.toLowerCase();
-        if (
-            cellElementTagName === 'a' && cellElement.getAttribute('href')
-        ) {
-            return true;
-        }
-
-        if (
-            cellElementTagName === 'video' && cellElement.getAttribute('src')
-        ) {
-            return true;
-        }
-
-        if (
-            cellElementTagName === 'audio' && cellElement.getAttribute('src')
-        ) {
-            return true;
-        }
-
-        if (
-            cellElementTagName === 'img' && cellElement.getAttribute('src')
-        ) {
-            return true;
-        }
-
-        if (getImageInAttributes(cellElement)) {
             return true;
         }
 
@@ -1985,13 +2003,13 @@ class TableElementAnalyze {
         return true;
     }
 
-    private _getCellBySelector() {
+    static getCellData(rowElements: Element[], classList: string[]) {
         const tableData: ITableElementAnalyzeRowData[] = [];
-        this._tableParam?.children?.forEach((rowElement) => {
+        rowElements.forEach((rowElement) => {
             const rowDataCache: ITableElementAnalyzeRowData = {};
 
             // if (this._selectors.length === 0 || this._selectors.length < (this._classes.length / 2 + 2)) {
-            this._classes.forEach((classes) => {
+            classList.forEach((classes) => {
                 if (classes.length === 0) {
                     return;
                 }
@@ -1999,7 +2017,7 @@ class TableElementAnalyze {
                 rowDataCache[classes] = getCellData(cellElement) || { text: '' };
             });
 
-            if (this._imageOrLinkFilterRuler(rowElement as HTMLElement)) {
+            if (imageOrLinkFilterRuler(rowElement as HTMLElement)) {
                 rowDataCache['000rowSelf__Univer__especial'] = getCellData(rowElement as HTMLElement) || { text: '' };
             }
 
@@ -2015,6 +2033,37 @@ class TableElementAnalyze {
 
         return tableData;
     }
+
+    // private _getCellBySelector() {
+    //     const tableData: ITableElementAnalyzeRowData[] = [];
+    //     this._tableParam?.children?.forEach((rowElement) => {
+    //         const rowDataCache: ITableElementAnalyzeRowData = {};
+
+    //         // if (this._selectors.length === 0 || this._selectors.length < (this._classes.length / 2 + 2)) {
+    //         this._classes.forEach((classes) => {
+    //             if (classes.length === 0) {
+    //                 return;
+    //             }
+    //             const cellElement = findElementBySelectorByDom(classes, rowElement as HTMLElement);
+    //             rowDataCache[classes] = getCellData(cellElement) || { text: '' };
+    //         });
+
+    //         if (imageOrLinkFilterRuler(rowElement as HTMLElement)) {
+    //             rowDataCache['000rowSelf__Univer__especial'] = getCellData(rowElement as HTMLElement) || { text: '' };
+    //         }
+
+    //         // } else {
+    //         //     this._selectors.forEach((selector) => {
+    //         //         const cellElement = findElementBySelectorByDom(selector, rowElement as HTMLElement);
+    //         //         rowDataCache[selector] = getCellData(cellElement) || { text: '' };
+    //         //     });
+    //         // }
+
+    //         tableData.push(rowDataCache);
+    //     });
+
+    //     return tableData;
+    // }
 
     // private _analyzeRow(rowElement: Element, baseSelector: string): void {
     //     if (rowElement.nodeName) {

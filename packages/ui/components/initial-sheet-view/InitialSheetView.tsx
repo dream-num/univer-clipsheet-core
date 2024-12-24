@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { t } from '@univer-clipsheet-core/locale';
 import type { TableProps } from '@components/table';
 import { Table } from '@components/table';
+import { Tooltip } from '@components/tooltip';
 import { Link } from '../link';
 
 export interface InitialSheetViewProps {
@@ -14,6 +15,8 @@ export interface InitialSheetViewProps {
 }
 
 type GetFunction<T> = T extends Function ? T : never;
+
+const tooltipAlign = { autoArrow: false };
 
 export const InitialSheetView = (props: InitialSheetViewProps) => {
     const { className, sheet, scroll, rounded = false } = props;
@@ -45,7 +48,7 @@ export const InitialSheetView = (props: InitialSheetViewProps) => {
                         ? <Link href={cell.url}>{cell.text || cell.url}</Link>
                         : cell.type === Sheet_Cell_Type_Enum.IMAGE
                             ? <img src={cell.url} alt={cell.text} className="w-20 h-20 object-contain" />
-                            : cell.text;
+                            : <Tooltip align={tooltipAlign} overlay={<span>{cell.text}</span>}><div className="line-clamp-4">{cell.text}</div></Tooltip>;
 
                     return <div className="text-sm text-gray-900 px-2 py-2 font-normal">{textContent}</div>;
                 },

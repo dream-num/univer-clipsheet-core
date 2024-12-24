@@ -136,7 +136,7 @@ export class DetectTablesService {
 
         const maxWeightedScore = Math.max(...mergedTables.map((table) => table.weightedScore));
         const maxArea = Math.max(...mergedTables.map((table) => table.area));
-        function calculateSortScore(area: number, weightedScore: number, alpha = 0.5, beta = 0.5) {
+        function calculateSortScore(area: number, weightedScore: number, alpha = 0.4, beta = 0.6) {
             return alpha * (weightedScore / maxWeightedScore) + beta * (area / maxArea);
         }
 

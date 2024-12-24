@@ -3,7 +3,7 @@ import './index.css';
 import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, sendCreateScraperMessage } from '@univer-clipsheet-core/scraper';
 import { useRefCallback, useStorageValue } from '@lib/hooks';
-import { closeSidePanel, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
+import { cloneDeep, closeSidePanel, getActiveTab, UIStorageKeyEnum } from '@univer-clipsheet-core/shared';
 import { t } from '@univer-clipsheet-core/locale';
 import { Sheet_Cell_Type_Enum } from '@univer-clipsheet-core/table';
 import { Dialog } from '@components/Dialog';
@@ -155,7 +155,10 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
             name: scraperName,
             description: scraperDescription,
             mode: autoExtractionMode,
-            columns: scraperData.columns,
+            columns: scraperData.columns.map((c, i) => {
+                c.index = i;
+                return c;
+            }),
             targetSelector: scraperData.targetSelector,
             config: getScraperConfig(),
         };
@@ -195,7 +198,7 @@ export const ScraperCreateForm = (props: IScraperCreateFormProps) => {
     const scraperTableColumn: IScraperTableProps['column'] = useMemo(() => ({
         onDelete: (column) => {
             if (isDrillDownColumn(column)) {
-                const newColumns: IScraperColumn[] = JSON.parse(JSON.stringify(scraperDataRef.current.columns));
+                const newColumns: IScraperColumn[] = cloneDeep(scraperDataRef.current.columns);
 
                 newColumns.forEach((col) => {
                     if (!col.drillDownConfig) {

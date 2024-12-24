@@ -78,7 +78,7 @@ const moreMenuMap = {
 export type UnionColumn = IScraperColumn | IDrillDownColumn;
 
 export function isDrillDownColumn(column: UnionColumn): column is IDrillDownColumn {
-    return (column as IDrillDownColumn).selector !== undefined;
+    return !('index' in column);
 }
 
 export interface IScraperTableProps {

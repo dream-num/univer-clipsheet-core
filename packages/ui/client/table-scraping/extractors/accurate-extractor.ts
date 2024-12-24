@@ -68,7 +68,7 @@ export class TableLikeElementExtractor extends IExtractor {
 
     override buildLazyLoadElements() {
         const tableExtractionParams = this._tableExtractionParams$.value;
-        const lazyLoadElements = new LazyLoadElements([tableExtractionParams], tableExtractionParams.grandChildrenLevel !== undefined);
+        const lazyLoadElements = new LazyLoadElements([tableExtractionParams], { isGrandchild: tableExtractionParams.grandChildrenLevel !== undefined });
         this.lazyLoadElements$.next(lazyLoadElements);
 
         return lazyLoadElements;

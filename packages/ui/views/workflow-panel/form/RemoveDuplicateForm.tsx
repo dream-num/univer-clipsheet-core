@@ -2,7 +2,7 @@ import type { IWorkflowColumn, WorkflowRemoveDuplicateRule } from '@univer-clips
 import { WorkflowRuleName } from '@univer-clipsheet-core/workflow';
 import { ColumnTypeTag } from '@components/ColumnTypeTag';
 import { t } from '@univer-clipsheet-core/locale';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useWorkflowPanelContext } from '../context';
 import { ColumnList, type ColumnListItem } from '../components/ColumnList';
 

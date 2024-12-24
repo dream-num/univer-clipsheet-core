@@ -1,11 +1,12 @@
-import type { IClickAutoExtractionConfig, IScraper, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
+import type { IClickAutoExtractionConfig, IScraper, IScraperColumn, IScrollAutoExtractionConfig, ScraperTaskChannelResponse } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, calculateRandomInterval, isScraperTaskChannelName, scraperTaskChannel } from '@univer-clipsheet-core/scraper';
-import type { ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
+import type { CreateLazyLoadElementOptions, ISheet_Row, UnionLazyLoadElements } from '@univer-clipsheet-core/table';
 import { createLazyLoadElement, findElementBySelector } from '@univer-clipsheet-core/table';
-import { ObservableValue, sendActiveTabMessage, sendReportPrintInfoMessage, waitFor } from '@univer-clipsheet-core/shared';
+import { ObservableValue, sendActiveTabMessage, waitFor } from '@univer-clipsheet-core/shared';
 import type { IClientChannel } from './client-channel';
 import { ClickExtractor, ScrollExtractor } from './extractors';
 import { getBodyScrollTop } from './extractors/scroll-extractor';
+import { ThresholdCounter } from './extractors/threshold-counter';
 
 function intervalUntil(duration: number, interval: number, callbacks: {
     onInterval: () => void;
@@ -55,6 +56,19 @@ function promisifyIntervalUntil<T = unknown>(duration: number, interval: number,
     });
 }
 
+export function createLazyLoadElementsOptions(columns: IScraperColumn[]): CreateLazyLoadElementOptions | undefined {
+    const classes = columns.map((c) => c.selector).filter(Boolean) as string[];
+    const options: CreateLazyLoadElementOptions = {
+        columnIndexes: columns.map((c) => c.index),
+    };
+
+    if (classes.length > 0) {
+        options.classes = classes;
+    }
+
+    return options;
+}
+
 export class ScraperClientChannel implements IClientChannel {
     constructor() {
 
@@ -76,9 +90,10 @@ export class ScraperClientChannel implements IClientChannel {
         });
     }
 
-    private async waitLazyLoadElement(el: HTMLElement) {
+    private async waitLazyLoadElement(el: HTMLElement, scraper: IScraper) {
         return promisifyIntervalUntil<UnionLazyLoadElements>(5000, 500, (resolve) => {
-            const lazyLoadElement = createLazyLoadElement(el);
+            const lazyLoadElement = createLazyLoadElement(el, createLazyLoadElementsOptions(scraper.columns));
+
             if (lazyLoadElement) {
                 resolve(lazyLoadElement);
             }
@@ -86,94 +101,63 @@ export class ScraperClientChannel implements IClientChannel {
     }
 
     private async _clickExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
-        window.scrollTo(0, document.body.scrollHeight);
+        sendActiveTabMessage();
 
         const scraperConfig = scraper.config as IClickAutoExtractionConfig;
 
-        const waitTargetElement = this.waitElement(scraper.targetSelector);
-        const waitButtonElement = this.waitElement(scraperConfig.buttonSelector);
-
-        const [targetElement, buttonElement] = (await Promise.all([waitTargetElement, waitButtonElement])).flat();
-
-        const lazyLoadElement = targetElement
-            ? createLazyLoadElement(targetElement)
-            : undefined;
-
-        const pushInitialRows = () => {
-            if (!lazyLoadElement) {
-                return;
-            }
-            const sheet = lazyLoadElement.getAllSheets()[0];
-            if (!sheet) {
-                return;
-            }
-            sendReportPrintInfoMessage('Click Extractor pushInitialRows', sheet.rows);
-            handleResponse({
-                rows: sheet.rows,
-            });
-        };
-
-        if (!buttonElement || !lazyLoadElement) {
-            setTimeout(() => {
-                pushInitialRows();
-                handleFail();
-            }, calculateRandomInterval(scraperConfig.maxInterval, scraperConfig.minInterval));
-
-            return;
-        }
-        sendReportPrintInfoMessage('Create Click Extractor');
         const clickExtractor = new ClickExtractor({
             minInterval: scraperConfig.minInterval,
             maxInterval: scraperConfig.maxInterval,
-            lazyLoadElement,
-            button: buttonElement,
         });
 
-        let latestTargetElement = targetElement!;
-        clickExtractor.registerCallback(() => {
-            const buttonElement2 = findElementBySelector(scraperConfig.buttonSelector);
-            const targetElement2 = findElementBySelector(scraper.targetSelector);
+        const rowSet = new Set<string>();
+        const thresholdCounter = new ThresholdCounter(3);
 
-            if (!buttonElement2) {
-                if (!clickExtractor.button$.value) {
-                    clickExtractor.stopAction();
+        thresholdCounter.onThreshold(() => {
+            clickExtractor.dispose();
+            handleFail();
+        });
+
+        clickExtractor.onInterval(() => {
+            const targetElement = findElementBySelector(scraper.targetSelector);
+            const buttonElement = findElementBySelector(scraperConfig.buttonSelector);
+
+            if (targetElement) {
+                const lazyLoadElement = createLazyLoadElement(targetElement, createLazyLoadElementsOptions(scraper.columns));
+
+                const sheet = lazyLoadElement?.getAllSheets()[0];
+
+                if (sheet) {
+                    const filteredRows = sheet.rows.filter((row) => {
+                        const key = JSON.stringify(row.cells);
+                        if (rowSet.has(key)) {
+                            return false;
+                        }
+                        rowSet.add(key);
+                        return true;
+                    });
+
+                    if (filteredRows.length > 0) {
+                        thresholdCounter.reset();
+                        handleResponse({
+                            rows: sheet.rows,
+                        });
+                    } else {
+                        thresholdCounter.count();
+                    }
                 }
-            } else if (buttonElement2 !== clickExtractor.button$.value) {
-                clickExtractor.button$.next(buttonElement2);
             }
 
-            if (targetElement2 && latestTargetElement !== targetElement2) {
-                const lazyLoadItem = lazyLoadElement.findItemByElement(latestTargetElement);
-                sendReportPrintInfoMessage('Click Extractor updateItemElement', lazyLoadItem);
-
-                if (lazyLoadItem) {
-                    latestTargetElement = targetElement2;
-                    // @ts-ignore
-                    lazyLoadElement.updateItemElement(lazyLoadItem, targetElement2);
-                }
+            if (!buttonElement || !targetElement) {
+                thresholdCounter.count();
+                return;
             }
+
+            sendActiveTabMessage();
+            ClickExtractor.dispatchClick(buttonElement);
         });
 
-        const unregister = clickExtractor.registerCallback(() => {
-            unregister();
-            pushInitialRows();
-        });
-
-        clickExtractor.data$.subscribe((data) => {
-            sendReportPrintInfoMessage('Click Extractor data$:', data);
-            handleResponse({
-                rows: data,
-            });
-        });
-
-        clickExtractor.done$.subscribe(() => {
-            handleResponse({
-                rows: [],
-                done: true,
-            });
-        });
-
-        clickExtractor.startAction(false);
+        clickExtractor.startAction();
     }
 
     private async _pageUrlExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
@@ -188,7 +172,8 @@ export class ScraperClientChannel implements IClientChannel {
             behavior: 'smooth',
         });
 
-        const lazyLoadElement = createLazyLoadElement(targetElement);
+        const lazyLoadElement = createLazyLoadElement(targetElement, createLazyLoadElementsOptions(scraper.columns));
+
         if (!lazyLoadElement) {
             return handleFail();
         }
@@ -206,9 +191,11 @@ export class ScraperClientChannel implements IClientChannel {
 
     private async _scrollExtract(scraper: IScraper, handleResponse: (res: ScraperTaskChannelResponse) => void, handleFail: () => void) {
         const handleScrollResponse = (res: ScraperTaskChannelResponse) => {
+            // Scroll response always override the previous response
             res.merge = false;
             handleResponse(res);
         };
+        // Active current tab
         sendActiveTabMessage();
         const elements = await this.waitElement(scraper.targetSelector);
         const targetElement = elements?.[0];
@@ -219,13 +206,19 @@ export class ScraperClientChannel implements IClientChannel {
             return handleFail();
         }
 
-        const lazyLoadElement = await this.waitLazyLoadElement(targetElement);
+        const lazyLoadElement = await this.waitLazyLoadElement(targetElement, scraper);
 
         if (!lazyLoadElement) {
             return handleFail();
         }
 
         const rows$ = new ObservableValue<ISheet_Row[]>([]);
+
+        // Push initial rows
+        const initialRows = lazyLoadElement.getAllSheets()[0]?.rows;
+        if (initialRows) {
+            rows$.next(initialRows);
+        }
 
         rows$.subscribe((rows) => {
             handleScrollResponse({
@@ -243,10 +236,7 @@ export class ScraperClientChannel implements IClientChannel {
             lazyLoadElement,
         });
 
-        const sheet = lazyLoadElement.getAllSheets()[0];
-        if (sheet) {
-            rows$.next(rows$.value.concat(sheet.rows));
-        }
+        scrollExtractor.onInterval(sendActiveTabMessage);
 
         scrollExtractor.done$.subscribe(() => {
             handleScrollResponse({
@@ -298,21 +288,26 @@ export class ScraperClientChannel implements IClientChannel {
                     break;
                 }
                 case AutoExtractionMode.None: {
-                    const targetElement = findElementBySelector(scraper.targetSelector);
-                    if (!targetElement) {
-                        return handleFail();
-                    }
-                    const lazyLoadElement = createLazyLoadElement(targetElement);
-                    if (!lazyLoadElement) {
-                        return handleFail();
-                    }
-                    const [sheet] = lazyLoadElement.getAllSheets();
-                    if (sheet) {
-                        handleResponse({
-                            rows: sheet.rows,
-                            done: true,
-                        });
-                    }
+                    sendActiveTabMessage();
+                    setTimeout(() => {
+                        const targetElement = findElementBySelector(scraper.targetSelector);
+                        if (!targetElement) {
+                            return handleFail();
+                        }
+
+                        const lazyLoadElement = createLazyLoadElement(targetElement, createLazyLoadElementsOptions(scraper.columns));
+                        if (!lazyLoadElement) {
+                            return handleFail();
+                        }
+
+                        const sheet = lazyLoadElement.getAllSheets()[0];
+                        if (sheet) {
+                            handleResponse({
+                                rows: sheet.rows,
+                                done: true,
+                            });
+                        }
+                    }, calculateRandomInterval(3, 1));
 
                     break;
                 }

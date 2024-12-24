@@ -100,3 +100,7 @@ export function requestDataSource<T, P = Record<string, any>>(key: string, param
         .then((msg) => msg.payload.value);
 }
 
+export function cloneDeep<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+}
+

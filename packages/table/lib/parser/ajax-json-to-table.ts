@@ -70,7 +70,10 @@ export function ajaxJsonToTable(jsonList: UnknownJson[]): IInitialSheet[] {
 
         const weightedScores = ajaxTables.map((table) => table.tableParam.weightedScore);
 
-        const resultSheets = toResultTable(filerTables, [], 'ajaxJsonToTable', Initial_Sheet_Type_Num.AJAX_TABLE);
+        const resultSheets = toResultTable(filerTables, [], {
+            title: 'ajaxJsonToTable',
+            type: Initial_Sheet_Type_Num.AJAX_TABLE,
+        });
 
         resultSheets.forEach((sheet, index) => {
             sheet.weightedScore = weightedScores[index] || 0;

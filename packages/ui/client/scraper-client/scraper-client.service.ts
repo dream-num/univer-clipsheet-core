@@ -6,7 +6,7 @@ import { createLazyLoadElement, findElementBySelector, PreviewSheetFromEnum } fr
 import { openPreviewTablePanel } from '@lib/helper';
 import type { IClientChannel } from './client-channel';
 import { DrillDownClientChannel } from './drill-down-client-channel';
-import { ScraperClientChannel } from './scraper-client-channel';
+import { createLazyLoadElementsOptions, ScraperClientChannel } from './scraper-client-channel';
 
 export class ScraperClientService {
     clientChannels = new Set<IClientChannel>();
@@ -41,13 +41,14 @@ export class ScraperClientService {
                     break;
                 }
                 case ScraperMessageTypeEnum.PreviewScraperTable: {
-                    const { selector, columnNames } = message.payload;
+                    const { selector, columns } = message.payload;
                     const el = findElementBySelector(selector);
 
                     if (!el) {
                         return;
                     }
-                    const lazyLoadElement = createLazyLoadElement(el);
+                    const lazyLoadElement = createLazyLoadElement(el, createLazyLoadElementsOptions(columns));
+
                     if (!lazyLoadElement) {
                         return;
                     }
@@ -57,7 +58,7 @@ export class ScraperClientService {
                         return;
                     }
 
-                    sheet.columnName = columnNames;
+                    sheet.columnName = columns.map((c) => c.name);
                     openPreviewTablePanel(sheet, PreviewSheetFromEnum.ScraperForm);
                 }
             }

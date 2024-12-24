@@ -159,7 +159,10 @@ export const ScraperEditForm = (props: IScraperEditFormProps) => {
             ...scraperData,
             mode: autoExtractionMode,
             config: getScraperConfig(),
-            columns: scraperData.columns,
+            columns: scraperData.columns.map((c, i) => {
+                c.index = i;
+                return c;
+            }),
         };
     };
 

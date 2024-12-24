@@ -1,5 +1,5 @@
 import type { IMessageWithPayload } from '@univer-clipsheet-core/shared';
-import type { IScraper } from '../scraper';
+import type { IScraper, IScraperColumn } from '../scraper';
 
 export enum ScraperDataSourceKeyEnum {
     ScraperList = 'scraper_list',
@@ -44,7 +44,7 @@ export type DeleteScraperMessage = IMessageWithPayload<ScraperMessageTypeEnum.De
 export type RunScraperFailedMessage = IMessageWithPayload<ScraperMessageTypeEnum.RunScraperFailed, IScraper>;
 export type PreviewScraperTableMessage = IMessageWithPayload<ScraperMessageTypeEnum.PreviewScraperTable, {
     selector: string;
-    columnNames: string[];
+    columns: IScraperColumn[];
 }>;
 
 export function sendCreateScraperMessage(payload: CreateScraperMessage['payload']) {

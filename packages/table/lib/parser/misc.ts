@@ -99,18 +99,36 @@ export function isValidUrl(urlStr: string) {
     }
 }
 
-export function analyzeRowsToSheetRows(analyzeRows: ITableElementAnalyzeRowData[], onCell?: (cell: ISheet_Row_Cell) => void) {
+export function analyzeRowsToSheetRows(analyzeRows: ITableElementAnalyzeRowData[], options?: {
+    rowKeys?: string[];
+    onCreateCell?: (cell: ISheet_Row_Cell) => void;
+}) {
+    const { rowKeys: _rowKeys, onCreateCell } = options || {};
+
     return analyzeRows.map((rowData) => {
         const row: ISheet_Row = {
             cells: [],
         };
 
-        Object.keys(rowData).sort().forEach((cellKey) => {
+        const rowKeys = _rowKeys ?? Object.keys(rowData).sort();
+
+        rowKeys.forEach((cellKey) => {
             const cellData = rowData[cellKey];
+            let cell: ISheet_Row_Cell;
+            if (!cellData) {
+                cell = {
+                    type: Sheet_Cell_Type_Enum.TEXT,
+                    text: '',
+                    url: '',
+                };
+                onCreateCell?.(cell);
+
+                row.cells.push(cell);
+                return;
+            }
 
             const { text, src, href } = cellData;
 
-            let cell: ISheet_Row_Cell;
             if (href != null && href.length > 0 && isValidUrl(href)) {
                 cell = {
                     type: Sheet_Cell_Type_Enum.URL,
@@ -131,7 +149,7 @@ export function analyzeRowsToSheetRows(analyzeRows: ITableElementAnalyzeRowData[
                 };
             }
 
-            onCell?.(cell);
+            onCreateCell?.(cell);
 
             row.cells.push(cell);
         });
@@ -140,7 +158,15 @@ export function analyzeRowsToSheetRows(analyzeRows: ITableElementAnalyzeRowData[
     });
 }
 
-export function toResultTable(mergeTableElements: ITableElementAnalyzeRowData[][], selectors: string[], title = 'TableApproximation', type = Initial_Sheet_Type_Num.APPROXIMATION_TABLE) {
+export interface IToResultTableOptions {
+    title?: string;
+    type?: Initial_Sheet_Type_Num;
+    rowKeys?: string[];
+}
+
+export function toResultTable(mergeTableElements: ITableElementAnalyzeRowData[][], selectors: string[], options?: IToResultTableOptions) {
+    const { title = 'TableApproximation', type = Initial_Sheet_Type_Num.APPROXIMATION_TABLE, rowKeys } = options || {};
+
     const resultSheets: IInitialSheet[] = [];
 
     mergeTableElements.forEach((tableData, index) => {
@@ -159,10 +185,13 @@ export function toResultTable(mergeTableElements: ITableElementAnalyzeRowData[][
 
         let valueCellCount = 0;
 
-        sheet.rows = analyzeRowsToSheetRows(tableData, (cell) => {
-            if (!isEmptyCell(cell)) {
-                valueCellCount++;
-            }
+        sheet.rows = analyzeRowsToSheetRows(tableData, {
+            rowKeys,
+            onCreateCell: (cell) => {
+                if (!isEmptyCell(cell)) {
+                    valueCellCount++;
+                }
+            },
         });
 
         sheet.density = valueCellCount / cellCount;

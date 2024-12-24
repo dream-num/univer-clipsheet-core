@@ -12,7 +12,7 @@ import type { IScraper, IScraperColumn } from '@univer-clipsheet-core/scraper';
 import { AutoExtractionMode, setCurrentScraper } from '@univer-clipsheet-core/scraper';
 import { captureEvent, ClipsheetMessageTypeEnum, generateRandomId, IframeViewTypeEnum, sendSetIframeViewMessage } from '@univer-clipsheet-core/shared';
 import type { IPreviewSheetStorageValue, ISheet_Row } from '@univer-clipsheet-core/table';
-import { getDrillDownSelector, getElementAccurateExtractionRows, isEmptyCell, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
+import { getDrillDownSelector, getElementAccurateExtractionRows, isEmptyCell, LazyLoadElements, PreviewSheetFromEnum, TableStorageKeyEnum } from '@univer-clipsheet-core/table';
 import type { Injector } from '@wendellhu/redi';
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -331,16 +331,26 @@ export const TableScrapingDialog = (props: {
 
         const rowCells = row.cells;
 
+        const lazyLoadElementClasses = lazyElements instanceof LazyLoadElements
+            ? lazyElements.classes
+            : undefined;
+
         const columns: IScraperColumn[] = rowCells.map((cell, index) => {
             const name = sheet.columnName[index] ?? `${t('Column')} ${index + 1}`;
 
-            return {
+            const column: IScraperColumn = {
                 id: generateRandomId(),
                 name,
                 index,
                 type: cell.type,
                 url: cell.url,
             };
+
+            if (lazyLoadElementClasses) {
+                column.selector = lazyLoadElementClasses[index];
+            }
+
+            return column;
         });
 
         const scraper: IScraper = {
